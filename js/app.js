@@ -42,6 +42,7 @@ if (typeof window !== 'undefined') {
     }
   });
 }
+
 /**
  * SMART AKUAPONIK IOT - DASHBOARD CONTROLLER & CHART.JS ENGINE
  */
@@ -63,22 +64,18 @@ const state = {
   activePeriod: 'harian',
   telemetry: {
     suhu_air: 26.3,
-    tds: 350, // Starts low to show alert as in screenshot
+    tds: 350,
     suhu_udara: 27.1,
     kelembaban: 84,
     level_air: 68.5,
     status_gateway: 'Aktif'
   },
-  relays: [0, 0, 0, 0, 0, 0], // Default state: All Relays OFF
+  relays: [0, 0, 0, 0, 0, 0],
   schedules: [
     { time: '08:00', portion: 1 },
     { time: '16:00', portion: 2 }
   ],
-  notifications: [
-    { title: "Gateway IoT Terhubung", desc: "ESP32 Gateway terhubung ke LoRa Channel 65.", time: "Baru saja", type: "info" },
-    { title: "Nutrisi Air Rendah", desc: "TDS terdeteksi < 400 PPM. Disarankan penambahan nutrisi.", time: "5 menit yang lalu", type: "warning" },
-    { title: "Pemberian Pakan Otomatis", desc: "Pakan 1 Porsi berhasil dikeluarkan jam 08:00.", time: "2 jam yang lalu", type: "success" }
-  ],
+  notifications: [],
   charts: {}
 };
 
@@ -111,7 +108,6 @@ function initNavigation() {
     state.activeTab = targetTabId;
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Resize charts if switching to monitoring tab
     if (targetTabId === 'tab-monitoring') {
       setTimeout(() => {
         Object.values(state.charts).forEach(chart => chart.resize());
@@ -131,80 +127,291 @@ function initNavigation() {
   }
 }
 
-/* ================= 2. THEME TOGGLE (DARK / LIGHT MODE) ================= */
+/* ================= 2. THEME TOGGLE ================= */
 function initThemeToggle() {
   const themeBtn = document.getElementById('theme-toggle-btn');
   const themeIcon = document.getElementById('theme-icon');
 
-  themeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    themeIcon.className = isDark ? 'fa-regular fa-sun' : 'fa-regular fa-moon';
-    
-    // Update chart text colors
-    updateChartTheme(isDark);
-  });
+  if (themeBtn && themeIcon) {
+    themeBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      themeIcon.className = isDark ? 'fa-regular fa-sun' : 'fa-regular fa-moon';
+      if (typeof updateChartTheme === 'function') updateChartTheme(isDark);
+    });
+  }
 }
 
-/* ================= 3. NOTIFICATION DROPDOWN ================= */
+/* ================= 3. INSTAGRAM STYLE NOTIFICATION DRAWER ================= */
+let currentNotifFilter = 'all';
+
+function getValidTimestamp(n) {
+  if (!n) return Date.now();
+  
+  let val = n.timestamp !== undefined ? n.timestamp : n.time;
+  
+  if (typeof val === 'number' && !isNaN(val) && val > 1000000000) {
+    return val;
+  }
+  
+  if (typeof val === 'string') {
+    let parsed = Number(val);
+    if (!isNaN(parsed) && parsed > 1000000000) {
+      return parsed;
+    }
+  }
+  
+  if (n.id && typeof n.id === 'string' && n.id.includes('notif_')) {
+    const parts = n.id.split('_');
+    if (parts.length >= 2) {
+      let parsedIdTs = Number(parts[1]);
+      if (!isNaN(parsedIdTs) && parsedIdTs > 1000000000) {
+        return parsedIdTs;
+      }
+    }
+  }
+
+  return Date.now();
+}
+
+function getNotifDateGroup(n) {
+  const ts = getValidTimestamp(n);
+  const d = new Date(ts);
+  const now = new Date();
+
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const yesterdayStart = todayStart - 86400000;
+  const itemTime = d.getTime();
+
+  if (itemTime >= todayStart) {
+    return 'Hari Ini';
+  } else if (itemTime >= yesterdayStart) {
+    return 'Kemarin';
+  } else {
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+}
+
+function formatNotifTime(n) {
+  const ts = getValidTimestamp(n);
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
 function initNotificationDropdown() {
   const bellBtn = document.getElementById('bell-btn');
-  const dropdown = document.getElementById('notification-dropdown');
+  const drawer = document.getElementById('ig-notif-drawer');
+  const overlay = document.getElementById('ig-notif-overlay');
+  const closeBtn = document.getElementById('ig-notif-close-btn');
   const clearBtn = document.getElementById('clear-notif-btn');
-  const countBadge = document.getElementById('bell-count');
+  const markReadBtn = document.getElementById('mark-read-btn');
+  const tabPills = document.querySelectorAll('.ig-tab-pill');
 
-  bellBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown.classList.toggle('active');
-  });
-
-  document.addEventListener('click', (e) => {
-    if (!dropdown.contains(e.target) && !bellBtn.contains(e.target)) {
-      dropdown.classList.remove('active');
-    }
-  });
-
-  clearBtn.addEventListener('click', () => {
-    state.notifications = [];
+  function openDrawer() {
+    if (drawer) drawer.classList.add('active');
+    if (overlay) overlay.classList.add('active');
     renderNotifications();
-    countBadge.style.display = 'none';
+  }
+
+  function closeDrawer() {
+    if (drawer) drawer.classList.remove('active');
+    if (overlay) overlay.classList.remove('active');
+  }
+
+  if (bellBtn) {
+    bellBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDrawer();
+    });
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (overlay) overlay.addEventListener('click', closeDrawer);
+
+  tabPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      tabPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentNotifFilter = pill.dataset.filter || 'all';
+      renderNotifications();
+    });
   });
+
+  if (markReadBtn) {
+    markReadBtn.addEventListener('click', () => {
+      if (state.notifications) {
+        state.notifications.forEach(n => n.read = true);
+      }
+      renderNotifications();
+      if (window.aquaponicsDB && window.aquaponicsDB.markNotificationsRead) {
+        window.aquaponicsDB.markNotificationsRead();
+      }
+    });
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      state.notifications = [];
+      renderNotifications();
+      if (window.aquaponicsDB && window.aquaponicsDB.clearNotifications) {
+        window.aquaponicsDB.clearNotifications();
+      }
+    });
+  }
+
+  renderNotifications();
 }
 
 function renderNotifications() {
   const container = document.getElementById('notif-list-container');
   const countBadge = document.getElementById('bell-count');
+  const unreadSubtext = document.getElementById('ig-notif-unread-count');
 
-  if (state.notifications.length === 0) {
-    container.innerHTML = '<div style="padding:16px; text-align:center; color:var(--text-muted); font-size:12px;">Tidak ada notifikasi baru</div>';
-    countBadge.style.display = 'none';
+  if (!container) return;
+
+  const notifs = state.notifications || [];
+  const unreadCount = notifs.filter(n => !n.read).length;
+
+  if (countBadge) {
+    if (unreadCount > 0) {
+      countBadge.innerText = unreadCount > 99 ? '99+' : unreadCount;
+      countBadge.style.display = 'flex';
+    } else {
+      countBadge.style.display = 'none';
+    }
+  }
+
+  if (unreadSubtext) {
+    unreadSubtext.innerText = unreadCount > 0 
+      ? `${unreadCount} Notifikasi Belum Dibaca` 
+      : `Tidak ada notifikasi baru`;
+  }
+
+  let filtered = [...notifs];
+  if (currentNotifFilter === 'telegram') {
+    filtered = filtered.filter(n => n.source === 'telegram' || (n.title && n.title.toLowerCase().includes('telegram')));
+  } else if (currentNotifFilter === 'warning') {
+    filtered = filtered.filter(n => n.type === 'warning' || n.type === 'danger');
+  }
+
+  // Notifikasi terbaru selalu paling atas (Timestamp Descending akurat)
+  filtered.sort((a, b) => getValidTimestamp(b) - getValidTimestamp(a));
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="ig-empty-notif">
+        <div class="ig-empty-bell-icon"><i class="fa-regular fa-bell"></i></div>
+        <div class="ig-empty-text">Tidak ada notifikasi</div>
+      </div>
+    `;
     return;
   }
 
-  countBadge.innerText = state.notifications.length;
-  countBadge.style.display = 'flex';
-
   const iconMap = {
-    info: 'fa-circle-check',
     warning: 'fa-triangle-exclamation',
-    success: 'fa-utensils'
+    danger: 'fa-triangle-exclamation',
+    success: 'fa-circle-check',
+    info: 'fa-circle-info'
   };
 
-  container.innerHTML = state.notifications.map(n => `
-    <div class="notif-item ${n.type}">
-      <div class="notif-icon"><i class="fa-solid ${iconMap[n.type] || 'fa-bell'}"></i></div>
-      <div class="notif-content">
-        <div class="notif-title">${n.title}</div>
-        <div class="notif-desc">${n.desc}</div>
-        <div class="notif-time">${n.time}</div>
+  let htmlResult = '';
+  let lastGroup = null;
+
+  filtered.forEach(n => {
+    const groupName = getNotifDateGroup(n);
+    if (groupName !== lastGroup) {
+      htmlResult += `<div class="ig-section-header">${groupName}</div>`;
+      lastGroup = groupName;
+    }
+
+    const isTelegram = n.source === 'telegram' || (n.title && n.title.toLowerCase().includes('telegram'));
+    const isUnread = !n.read;
+    const timeStr = formatNotifTime(n);
+    
+    let avatarClass = isTelegram ? 'source-telegram' : `type-${n.type || 'warning'}`;
+    let avatarIcon = isTelegram 
+      ? '<i class="fa-brands fa-telegram"></i>' 
+      : `<i class="fa-solid ${iconMap[n.type] || 'fa-triangle-exclamation'}"></i>`;
+
+    let titleText = n.title || 'Notifikasi';
+    if (!titleText.startsWith('⚠️') && !titleText.startsWith('ℹ️') && !titleText.startsWith('✅')) {
+      if (n.type === 'warning' || n.type === 'danger' || !n.type) {
+        titleText = `⚠️ ${titleText}`;
+      }
+    }
+
+    let descText = n.desc || '';
+    if (descText && !descText.includes('<strong>')) {
+      descText = descText.replace(/^([A-Za-z0-9\s]+:)/, '<strong>$1</strong>');
+    }
+
+    htmlResult += `
+      <div class="ig-notif-item ${isUnread ? 'unread' : ''}" data-id="${n.id || ''}">
+        <div class="ig-avatar-badge ${avatarClass}">
+          ${avatarIcon}
+        </div>
+        <div class="ig-notif-content">
+          <div class="ig-notif-title-line">${titleText}</div>
+          <div class="ig-notif-desc">${descText}</div>
+          <div class="ig-notif-time">${timeStr}</div>
+        </div>
+        <div class="ig-notif-right-actions">
+          ${isUnread ? '<div class="ig-unread-dot"></div>' : ''}
+          <button class="ig-notif-close-item" data-id="${n.id || ''}" title="Hapus Notifikasi">&times;</button>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  });
+
+  container.innerHTML = htmlResult;
+
+  container.querySelectorAll('.ig-notif-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (e.target.closest('.ig-notif-close-item')) return;
+      const id = item.dataset.id;
+      const target = state.notifications.find(n => n.id == id);
+      if (target && !target.read) {
+        target.read = true;
+        renderNotifications();
+      }
+    });
+  });
+
+  container.querySelectorAll('.ig-notif-close-item').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      if (id) {
+        state.notifications = state.notifications.filter(n => n.id != id);
+        renderNotifications();
+      }
+    });
+  });
 }
+
+function addNotification(type, title, desc, source = 'system') {
+  if (!state.notifications) state.notifications = [];
+  const notifObj = {
+    id: `notif_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    type: type || 'info',
+    title: title || 'Notifikasi',
+    desc: desc || '',
+    source: source || 'system',
+    timestamp: Date.now(),
+    read: false
+  };
+  state.notifications.unshift(notifObj);
+  if (window.aquaponicsDB && window.aquaponicsDB.pushNotification) {
+    window.aquaponicsDB.pushNotification(notifObj);
+  }
+  if (typeof renderNotifications === 'function') renderNotifications();
+}
+window.addNotification = addNotification;
 
 /* ================= 4. REAL-TIME DATA BINDING ================= */
 function initRealtimeDataBinding() {
-  // Subscribe to Firebase RTDB live telemetry
   if (window.aquaponicsDB) {
     window.aquaponicsDB.subscribeTelemetry(data => {
       if (data) {
@@ -216,10 +423,9 @@ function initRealtimeDataBinding() {
         if (data.level_air !== undefined) { state.telemetry.level_air = parseFloat(data.level_air); updated = true; }
         
         if (data.relays && Array.isArray(data.relays)) {
-          // Only update relays from polling if user hasn't toggled a relay in the last 15 seconds
           if (!state.lastRelayToggleTime || (Date.now() - state.lastRelayToggleTime > 15000)) {
             state.relays = data.relays;
-            syncRelayUI();
+            if (typeof syncRelayUI === 'function') syncRelayUI();
           }
         }
 
@@ -229,9 +435,17 @@ function initRealtimeDataBinding() {
         }
       }
     });
+
+    if (window.aquaponicsDB.subscribeNotifications) {
+      window.aquaponicsDB.subscribeNotifications(list => {
+        if (Array.isArray(list)) {
+          state.notifications = list;
+          renderNotifications();
+        }
+      });
+    }
   }
 
-  // Periodic UI refresh & countdown
   setInterval(updateUI, 2000);
 }
 
@@ -239,7 +453,6 @@ function pushRealtimeChartData(data) {
   const charts = state.charts;
   if (!charts) return;
 
-  // 1. Suhu Air
   if (data.suhu_air !== undefined && charts.suhuAir) {
     const d = charts.suhuAir.data.datasets[0].data;
     if (d && d.length > 0) {
@@ -248,7 +461,6 @@ function pushRealtimeChartData(data) {
     }
   }
 
-  // 2. TDS Nutrisi
   if (data.tds !== undefined && charts.tds) {
     const d = charts.tds.data.datasets[0].data;
     if (d && d.length > 0) {
@@ -257,7 +469,6 @@ function pushRealtimeChartData(data) {
     }
   }
 
-  // 3. Level Air
   if (data.level_air !== undefined && charts.levelAir) {
     const d = charts.levelAir.data.datasets[0].data;
     if (d && d.length > 0) {
@@ -266,7 +477,6 @@ function pushRealtimeChartData(data) {
     }
   }
 
-  // 4. Suhu Udara
   if (data.suhu_udara !== undefined && charts.suhuUdara) {
     const d = charts.suhuUdara.data.datasets[0].data;
     if (d && d.length > 0) {
@@ -276,7 +486,6 @@ function pushRealtimeChartData(data) {
   }
 }
 
-// TELEGRAM BOT CONFIGURATION & ALERT ENGINE
 const TELEGRAM_CONFIG = {
   botToken: "8758597072:AAEe0ymSD2RfdiCAoF4EoCfLpf2oeOdW3NM",
   chatId: "7207067918",
@@ -299,6 +508,19 @@ async function sendTelegramAlert(key, text, isInstant = false) {
     console.log(`[Telegram Alert Sent]: ${key}`);
   } catch (e) {
     console.warn("[Telegram Web Error]", e);
+  }
+
+  // Masukkan semua notifikasi Telegram & Alert ke ikon lonceng web
+  try {
+    const cleanText = text.replace(/<[^>]*>/g, '').replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+    const lines = cleanText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+    const title = lines[0] || 'Notifikasi System';
+    const desc = lines.length > 1 ? lines.slice(1).join(' ') : title;
+    const isAlert = key.includes('web_level_air') || key.includes('web_tds') || key.includes('web_suhu') || key.includes('alert');
+    const type = isAlert ? 'warning' : (key.includes('feed') ? 'success' : 'info');
+    addNotification(type, title, desc, 'system');
+  } catch (err) {
+    console.warn('[Web Notif Error]', err);
   }
 }
 
@@ -403,20 +625,19 @@ function updateUI() {
     elKelembaban.classList.add('text-critical-red');
     elKelembaban.classList.remove('text-purple');
     if (statusKelembaban) {
-      statusKelembaban.className = 'text-critical-red font-weight-700';
+      statusKelembaban.className = 'warning-alert-text text-critical-red font-weight-700';
       statusKelembaban.innerHTML = `${critIcon}${kelembaban < 50 ? 'Udara Kering' : 'Udara Lembab'}`;
     }
   } else {
     elKelembaban.classList.remove('text-critical-red');
     elKelembaban.classList.add('text-purple');
     if (statusKelembaban) {
-      statusKelembaban.className = 'text-purple font-weight-700';
+      statusKelembaban.className = 'badge-status status-purple';
       statusKelembaban.innerHTML = '<span class="status-dot purple"></span> Optimal';
     }
   }
   elKelembaban.innerHTML = `${kelembaban}%`;
 
-  // 5. Level Air Kolam (Kritis < 30%)
   const levelAir = state.telemetry.level_air;
   const elLevelAir = document.getElementById('val-level-air');
   const badgeLevelAir = document.getElementById('badge-level-air');
@@ -493,35 +714,26 @@ function updateEcosystemStatus() {
   const ecoBubblesGroup = document.getElementById('eco-bubbles-group');
   const ecoFishPill = document.getElementById('eco-fish-status-pill');
 
-  // Dynamically calculate SVG water Y level: 100% level -> Y=20, 0% level -> Y=85
   const waterY = Math.max(20, Math.min(85, Math.round(90 - (levelAir * 0.7))));
   if (ecoWaterPath) {
     ecoWaterPath.setAttribute('d', `M 0 ${waterY} Q 60 ${waterY - 8} 120 ${waterY} T 240 ${waterY - 5} L 240 100 L 0 100 Z`);
   }
 
-  // Calculate Fish Y offset so fish smoothly follows water height:
-  // Water level 50% = Y=55 (normal fish position at Y=50) -> offset = 0
-  // Low water Y=80 -> fish moves down by +25px
-  // High water Y=30 -> fish floats up by -15px
   const fishYOffset = Math.round((waterY - 50) * 0.7);
-
-  // Evaluate Fish Critical State (Level Air < 30% or Suhu Air Extreme)
   const isFishCritical = levelAir < 30.0 || suhuAir < 20.0 || suhuAir > 34.0;
 
   if (isFishCritical) {
-    // Fish is struggling in shallow water / extreme temp
-    if (ecoFishBody) ecoFishBody.setAttribute('fill', '#EF4444'); // Warning Red fish color
+    if (ecoFishBody) ecoFishBody.setAttribute('fill', '#EF4444');
     if (ecoFishGroup) {
       ecoFishGroup.style.transform = `translate(10px, ${fishYOffset + 12}px) rotate(22deg)`;
     }
-    if (ecoBubblesGroup) ecoBubblesGroup.style.display = 'none'; // Bubbles stop in shallow/critical water
+    if (ecoBubblesGroup) ecoBubblesGroup.style.display = 'none';
     if (ecoFishPill) {
       ecoFishPill.className = 'eco-status-pill red-pill';
       ecoFishPill.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Air Kritis (${levelAir.toFixed(1)}%): Air Dangkal!</span>`;
     }
   } else {
-    // Fish is healthy & swimming happily following water level smoothly
-    if (ecoFishBody) ecoFishBody.setAttribute('fill', '#5E6C7D'); // Healthy slate color
+    if (ecoFishBody) ecoFishBody.setAttribute('fill', '#5E6C7D');
     if (ecoFishGroup) {
       ecoFishGroup.style.transform = `translate(0px, ${fishYOffset}px) rotate(0deg)`;
     }
@@ -539,7 +751,6 @@ function updateEcosystemStatus() {
   const ecoPlantPill = document.getElementById('eco-plant-status-pill');
 
   if (tdsVal < 400) {
-    // LOW TDS: Nutrisi Rendah (Air Bersih) -> Tanaman Layu / Pucat Kuning Oranye
     if (leafLeft) leafLeft.setAttribute('fill', '#D97706');
     if (leafRight) leafRight.setAttribute('fill', '#F59E0B');
     if (leafCenter) leafCenter.setAttribute('fill', '#FBBF24');
@@ -548,7 +759,6 @@ function updateEcosystemStatus() {
       ecoPlantPill.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Nutrisi Rendah (${tdsVal} PPM): Lambat</span>`;
     }
   } else if (tdsVal <= 900) {
-    // OPTIMAL TDS: Nutrisi Optimal -> Tanaman Hijau Subur & Segar
     if (leafLeft) leafLeft.setAttribute('fill', '#10B981');
     if (leafRight) leafRight.setAttribute('fill', '#059669');
     if (leafCenter) leafCenter.setAttribute('fill', '#34D399');
@@ -557,7 +767,6 @@ function updateEcosystemStatus() {
       ecoPlantPill.innerHTML = `<span class="status-dot green"></span><span>Nutrisi Optimal (${tdsVal} PPM): Subur</span>`;
     }
   } else {
-    // HIGH TDS: Nutrisi Pekat / Kelebihan -> Daun Terbakar Merah Tua
     if (leafLeft) leafLeft.setAttribute('fill', '#DC2626');
     if (leafRight) leafRight.setAttribute('fill', '#B91C1C');
     if (leafCenter) leafCenter.setAttribute('fill', '#EF4444');
@@ -570,18 +779,47 @@ function updateEcosystemStatus() {
 
 function updateFeedingCountdown() {
   const now = new Date();
+  const hoursStr = String(now.getHours()).padStart(2, '0');
+  const minsStr = String(now.getMinutes()).padStart(2, '0');
+  const timeNowStr = `${hoursStr}:${minsStr}`;
+  const dateTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (!state.lastTriggeredSchedules) {
+    state.lastTriggeredSchedules = {};
+  }
 
   let nextSchedule = null;
   let minDiff = Infinity;
 
   state.schedules.forEach(sched => {
     const [h, m] = sched.time.split(':').map(Number);
-    let schedMinutes = h * 60 + m;
-    if (schedMinutes <= currentMinutes) {
-      schedMinutes += 24 * 60; // Next day
+    const schedMinutes = h * 60 + m;
+    const timeSchedStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+    // AUTOMATIC FEEDING EXECUTION ENGINE
+    if (timeNowStr === timeSchedStr) {
+      const triggerKey = `${dateTodayStr}_${timeSchedStr}`;
+      if (!state.lastTriggeredSchedules[triggerKey]) {
+        state.lastTriggeredSchedules[triggerKey] = true;
+        console.log(`[Auto Feeder Triggered] Scheduled time hit: ${timeSchedStr} (${sched.portion} Portion)`);
+        
+        // Trigger Feeding Action (Relay 6, Firebase & Telegram Alert)
+        if (typeof triggerDirectFeeding === 'function') {
+          triggerDirectFeeding(sched.portion);
+        }
+
+        // Display Success Toast Notification
+        if (typeof addNotification === 'function') {
+          addNotification('success', 'Pakan Otomatis Berhasil', `Feeder Pakan otomatis aktif sesuai jadwal ${timeSchedStr} (${sched.portion} Porsi)`);
+        }
+      }
     }
-    const diff = schedMinutes - currentMinutes;
+
+    let diff = schedMinutes - currentMinutes;
+    if (diff <= 0) {
+      diff += 24 * 60; // Next day
+    }
     if (diff < minDiff) {
       minDiff = diff;
       nextSchedule = sched;
@@ -591,233 +829,370 @@ function updateFeedingCountdown() {
   const countdownEl = document.getElementById('feed-countdown');
   const nextTimeEl = document.getElementById('feed-next-time');
 
-  if (nextSchedule && minDiff !== Infinity) {
-    const hoursRemaining = Math.floor(minDiff / 60);
-    const minsRemaining = minDiff % 60;
+  if (countdownEl && nextTimeEl) {
+    if (nextSchedule && minDiff !== Infinity) {
+      const hoursRemaining = Math.floor(minDiff / 60);
+      const minsRemaining = minDiff % 60;
 
-    if (hoursRemaining > 0) {
-      countdownEl.innerText = `${hoursRemaining} Jm ${minsRemaining} Mnt`;
+      if (hoursRemaining > 0) {
+        countdownEl.innerText = `${hoursRemaining} Jm ${minsRemaining} Mnt`;
+      } else {
+        countdownEl.innerText = `${minsRemaining} Mnt Lagi`;
+      }
+      nextTimeEl.innerText = `${nextSchedule.time} (${nextSchedule.portion} Porsi)`;
     } else {
-      countdownEl.innerText = `${minsRemaining} Mnt Lagi`;
+      countdownEl.innerText = '- Mnt Lagi';
+      nextTimeEl.innerText = 'Belum Ada Jadwal';
     }
-    nextTimeEl.innerText = `${nextSchedule.time} (${nextSchedule.portion} Porsi)`;
-  } else {
-    countdownEl.innerText = '- Mnt Lagi';
-    nextTimeEl.innerText = 'Belum Ada Jadwal';
   }
-}
-
-/* ================= 5. CHART.JS MONITORING ENGINE ================= */
-function initCharts() {
-  const periodBtns = document.querySelectorAll('.filter-tab-group .filter-btn');
-
-  periodBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      periodBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      state.activePeriod = btn.dataset.period;
-      updateChartsData();
-    });
-  });
-
-  createAllCharts();
 }
 
 function getChartTimeLabels(period) {
-  if (period === 'harian') {
-    // Harian: Hari + Jam (contoh: Rabu 00:00, Rabu 03:00, ..., Rabu 24:00)
-    const daysIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    const todayName = daysIndo[new Date().getDay()];
-    return [
-      `${todayName} 00:00`,
-      `${todayName} 03:00`,
-      `${todayName} 06:00`,
-      `${todayName} 09:00`,
-      `${todayName} 12:00`,
-      `${todayName} 15:00`,
-      `${todayName} 18:00`,
-      `${todayName} 21:00`,
-      `${todayName} 24:00`
-    ];
-  } else if (period === 'mingguan') {
-    // Mingguan: Minggu 1, 2, 3, 4
+  const p = String(period || 'harian').toLowerCase().trim();
+  if (p === 'harian' || p === 'daily') {
+    return ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00', '24:00'];
+  } else if (p === 'mingguan' || p === 'weekly') {
     return ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
   } else {
-    // Bulanan: Tanggal / Bulan / Tahun (DD/MM/YYYY)
-    return ['01/08/2026', '05/08/2026', '10/08/2026', '15/08/2026', '20/08/2026', '25/08/2026', '30/08/2026'];
+    // Exact Bulanan date labels format matching user screenshot: '22 Jul', '26 Jul', '30 Jul', '3 Agt', '7 Agt', '11 Agt', '15 Agt', '19 Agt'
+    const monthsIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+    const today = new Date();
+    const labels = [];
+    for (let i = 7; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (i * 4));
+      labels.push(`${d.getDate()} ${monthsIndo[d.getMonth()]}`);
+    }
+    return labels;
   }
 }
 
-function createAllCharts() {
-  const labels = getChartTimeLabels('harian');
-  const isDark = document.body.classList.contains('dark-mode');
+function initCharts() {
+  const period = state.activePeriod || 'harian';
+  const labels = getChartTimeLabels(period);
+
+  const isDark = document.body.getAttribute('data-theme') === 'dark';
   const textColor = isDark ? '#94A3B8' : '#64748B';
-  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)';
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(226, 232, 240, 0.7)';
 
   const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: {
-      duration: 1000,
-      easing: 'easeInOutCubic'
+    interaction: {
+      mode: 'index',
+      intersect: false
     },
     plugins: {
       legend: { display: false },
-      tooltip: { cornerRadius: 8, padding: 10 }
+      tooltip: {
+        enabled: true,
+        backgroundColor: '#27272A',
+        titleColor: '#FFFFFF',
+        titleFont: { family: 'Inter', size: 12, weight: '700' },
+        bodyColor: '#FFFFFF',
+        bodyFont: { family: 'Inter', size: 12, weight: '500' },
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 1,
+        cornerRadius: 8,
+        padding: 10,
+        usePointStyle: true,
+        boxWidth: 8,
+        boxHeight: 8,
+        boxPadding: 4,
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null && context.parsed.y !== undefined) {
+              const val = context.parsed.y;
+              if (Number.isInteger(val)) {
+                label += val.toLocaleString('id-ID');
+              } else {
+                label += val.toFixed(1).replace('.', ',');
+              }
+            }
+            return label;
+          }
+        }
+      }
     },
     scales: {
-      x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Inter', sans-serif", size: 10 } } },
-      y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: "'Inter', sans-serif", size: 10 } } }
+      x: {
+        grid: { display: false, drawBorder: false },
+        ticks: { color: textColor, font: { family: 'Inter', size: 11 } }
+      },
+      y: {
+        grid: { color: gridColor, drawBorder: false },
+        ticks: { color: textColor, font: { family: 'Inter', size: 11 } }
+      }
     }
   };
 
   const currentSuhuAir = state.telemetry.suhu_air || 26.3;
-  const currentTds = Math.round(state.telemetry.tds) || 598;
+  const currentTds = Math.round(state.telemetry.tds) || 0;
   const currentLevel = state.telemetry.level_air || 68.5;
   const currentSuhuUdara = state.telemetry.suhu_udara || 27.1;
 
-  // 1. Chart Suhu Air Kolam
-  const ctxSuhuAir = document.getElementById('chart-suhu-air').getContext('2d');
-  state.charts.suhuAir = new Chart(ctxSuhuAir, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Suhu Air (°C)',
-        data: [25.8, 25.6, 25.5, 26.0, 26.8, 27.2, 26.9, 26.5, currentSuhuAir],
-        borderColor: '#2563EB',
-        backgroundColor: 'rgba(37, 99, 235, 0.12)',
-        borderWidth: 2.5,
-        fill: true,
-        tension: 0.4,
-        spanGaps: true,
-        pointRadius: 4,
-        pointBackgroundColor: '#2563EB'
-      }]
-    },
-    options: {
-      ...commonOptions,
-      scales: {
-        ...commonOptions.scales,
-        y: { ...commonOptions.scales.y, min: 20, max: 35 }
+  // 1. Chart Suhu Air Kolam (°C)
+  const elSuhuAir = document.getElementById('chart-suhu-air');
+  if (elSuhuAir) {
+    const ctxSuhuAir = elSuhuAir.getContext('2d');
+    state.charts.suhuAir = new Chart(ctxSuhuAir, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Suhu Air (°C)',
+          data: period === 'bulanan'
+            ? [30.1, 28.5, 29.2, 29.0, 28.6, 29.8, 28.0, currentSuhuAir]
+            : [25.8, 25.6, 25.5, 26.0, 26.8, 27.2, 26.9, 26.5, currentSuhuAir],
+          borderColor: '#2563EB',
+          backgroundColor: 'rgba(37, 99, 235, 0.12)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.4,
+          spanGaps: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#2563EB',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        ...commonOptions,
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ...commonOptions.scales.y,
+            min: 0,
+            max: 45,
+            ticks: {
+              ...commonOptions.scales.y.ticks,
+              stepSize: 5
+            }
+          }
+        }
       }
-    }
-  });
+    });
+  }
 
-  // 2. Chart TDS Nutrisi Air
-  const ctxTDS = document.getElementById('chart-tds').getContext('2d');
-  state.charts.tds = new Chart(ctxTDS, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'TDS Nutrisi Air (PPM)',
-        data: [580, 585, 590, 595, 610, 605, 600, 592, currentTds],
-        borderColor: '#10B981',
-        backgroundColor: 'rgba(16, 185, 129, 0.10)',
-        borderWidth: 2.5,
-        fill: true,
-        tension: 0.4,
-        spanGaps: true,
-        pointRadius: 4,
-        pointBackgroundColor: '#10B981'
-      }]
-    },
-    options: {
-      ...commonOptions,
-      scales: {
-        ...commonOptions.scales,
-        y: { ...commonOptions.scales.y, min: 0, max: 1000 }
+  // 2. Chart TDS Nutrisi Air (PPM)
+  const elTDS = document.getElementById('chart-tds');
+  if (elTDS) {
+    const ctxTDS = elTDS.getContext('2d');
+    state.charts.tds = new Chart(ctxTDS, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'TDS Nutrisi Air (PPM)',
+          data: period === 'bulanan'
+            ? [15, 0, 10, 5, 0, 20, 0, currentTds]
+            : [580, 585, 590, 595, 610, 605, 600, 592, currentTds],
+          borderColor: '#10B981',
+          backgroundColor: 'rgba(16, 185, 129, 0.10)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.4,
+          spanGaps: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#10B981',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        ...commonOptions,
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ...commonOptions.scales.y,
+            min: 0,
+            max: 1200,
+            ticks: {
+              ...commonOptions.scales.y.ticks,
+              stepSize: 200,
+              callback: (val) => val === 0 ? '0' : val.toLocaleString('id-ID')
+            }
+          }
+        }
       }
-    }
-  });
+    });
+  }
 
-  // 3. Chart Level Air Kolam
-  const ctxLevelAir = document.getElementById('chart-level-air').getContext('2d');
-  state.charts.levelAir = new Chart(ctxLevelAir, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Level Air Kolam (%)',
-        data: [72, 70, 69, 75, 74, 71, 70, 69, currentLevel],
-        borderColor: '#06B6D4',
-        backgroundColor: 'rgba(6, 182, 212, 0.12)',
-        borderWidth: 2.5,
-        fill: true,
-        tension: 0.35,
-        spanGaps: true,
-        pointRadius: 4,
-        pointBackgroundColor: '#06B6D4'
-      }]
-    },
-    options: {
-      ...commonOptions,
-      scales: {
-        ...commonOptions.scales,
-        y: { ...commonOptions.scales.y, min: 0, max: 100 }
+  // 3. Chart Level Air Kolam (%)
+  const elLevelAir = document.getElementById('chart-level-air');
+  if (elLevelAir) {
+    const ctxLevelAir = elLevelAir.getContext('2d');
+    state.charts.levelAir = new Chart(ctxLevelAir, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Level Air Kolam (%)',
+          data: [72, 70, 69, 75, 74, 71, 70, 69, currentLevel],
+          borderColor: '#06B6D4',
+          backgroundColor: 'rgba(6, 182, 212, 0.12)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.35,
+          spanGaps: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#06B6D4',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        ...commonOptions,
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ...commonOptions.scales.y,
+            min: 0,
+            max: 100,
+            ticks: {
+              ...commonOptions.scales.y.ticks,
+              stepSize: 20
+            }
+          }
+        }
       }
-    }
-  });
+    });
+  }
 
-  // 4. Chart Suhu Udara Ambient
-  const ctxSuhuUdara = document.getElementById('chart-suhu-udara').getContext('2d');
-  state.charts.suhuUdara = new Chart(ctxSuhuUdara, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [{
-        label: 'Suhu Udara (°C)',
-        data: [24.5, 24.0, 25.2, 28.5, 31.0, 30.2, 28.4, 27.5, currentSuhuUdara],
-        borderColor: '#F97316',
-        backgroundColor: 'rgba(249, 115, 22, 0.12)',
-        borderWidth: 2.5,
-        fill: true,
-        tension: 0.4,
-        spanGaps: true,
-        pointRadius: 4,
-        pointBackgroundColor: '#F97316'
-      }]
-    },
-    options: {
-      ...commonOptions,
-      scales: {
-        ...commonOptions.scales,
-        y: { ...commonOptions.scales.y, min: 20, max: 38 }
+  // 4. Chart Suhu Udara Ambient (°C)
+  const elSuhuUdara = document.getElementById('chart-suhu-udara');
+  if (elSuhuUdara) {
+    const ctxSuhuUdara = elSuhuUdara.getContext('2d');
+    state.charts.suhuUdara = new Chart(ctxSuhuUdara, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Suhu Udara (°C)',
+          data: [24.5, 24.0, 25.2, 28.5, 31.0, 30.2, 28.4, 27.5, currentSuhuUdara],
+          borderColor: '#F97316',
+          backgroundColor: 'rgba(249, 115, 22, 0.12)',
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.4,
+          spanGaps: true,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+          pointBackgroundColor: '#F97316',
+          pointBorderColor: '#FFFFFF',
+          pointBorderWidth: 2
+        }]
+      },
+      options: {
+        ...commonOptions,
+        scales: {
+          ...commonOptions.scales,
+          y: {
+            ...commonOptions.scales.y,
+            min: 0,
+            max: 45,
+            ticks: {
+              ...commonOptions.scales.y.ticks,
+              stepSize: 5
+            }
+          }
+        }
       }
-    }
+    });
+  }
+
+  // 5. Mini Chart.js Bar Graphic for Suhu Udara Ambient on Beranda Card
+  const elMiniSuhuUdara = document.getElementById('mini-chart-suhu-udara');
+  if (elMiniSuhuUdara) {
+    const ctxMini = elMiniSuhuUdara.getContext('2d');
+    state.charts.miniSuhuUdara = new Chart(ctxMini, {
+      type: 'bar',
+      data: {
+        labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'Saat ini'],
+        datasets: [{
+          label: 'Suhu Udara (°C)',
+          data: [24.5, 24.0, 26.2, 31.0, 29.5, 27.8, currentSuhuUdara],
+          backgroundColor: 'rgba(245, 158, 11, 0.75)',
+          hoverBackgroundColor: '#F59E0B',
+          borderRadius: 4,
+          borderSkipped: false,
+          barThickness: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            backgroundColor: '#1E293B',
+            titleColor: '#F8FAFC',
+            bodyColor: '#F8FAFC',
+            borderRadius: 6,
+            padding: 6
+          }
+        },
+        scales: {
+          x: { display: false },
+          y: { display: false, min: 15, max: 40 }
+        }
+      }
+    });
+  }
+
+  // Bind click event listeners to period filter buttons (Harian, Mingguan, Bulanan)
+  const filterBtns = document.querySelectorAll('.filter-btn, .filter-tab-group button');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const selectedPeriod = (btn.dataset.period || btn.innerText).toLowerCase().trim();
+      state.activePeriod = selectedPeriod;
+      console.log(`[Chart Period Switch] Period changed to: ${selectedPeriod}`);
+
+      updateChartsData();
+    });
   });
 }
 
 function updateChartsData() {
-  const period = state.activePeriod;
+  const period = String(state.activePeriod || 'harian').toLowerCase().trim();
   const labels = getChartTimeLabels(period);
 
   let suhuAirData, tdsData, levelAirData, suhuUdaraData;
 
   const currentSuhuAir = state.telemetry.suhu_air || 26.3;
-  const currentTds = Math.round(state.telemetry.tds) || 598;
+  const currentTds = Math.round(state.telemetry.tds) || 0;
   const currentLevel = state.telemetry.level_air || 68.5;
   const currentSuhuUdara = state.telemetry.suhu_udara || 27.1;
 
-  if (period === 'harian') {
-    // 9 Time Slots (00:00 to 24:00) -> 9 Data Points matching labels
+  if (period === 'harian' || period === 'daily') {
     suhuAirData = [25.8, 25.6, 25.5, 26.0, 26.8, 27.2, 26.9, 26.5, currentSuhuAir];
     tdsData = [580, 585, 590, 595, 610, 605, 600, 592, currentTds];
     levelAirData = [72, 70, 69, 75, 74, 71, 70, 69, currentLevel];
     suhuUdaraData = [24.5, 24.0, 25.2, 28.5, 31.0, 30.2, 28.4, 27.5, currentSuhuUdara];
-  } else if (period === 'mingguan') {
-    // 4 Weeks (Minggu 1 - Minggu 4)
+  } else if (period === 'mingguan' || period === 'weekly') {
     suhuAirData = [26.0, 26.4, 26.8, currentSuhuAir];
     tdsData = [530, 580, 620, currentTds];
     levelAirData = [82, 80, 75, currentLevel];
     suhuUdaraData = [26.5, 27.8, 28.9, currentSuhuUdara];
   } else {
-    // 7 Dates (Tanggal/Bulan/Tahun)
-    suhuAirData = [25.5, 25.9, 26.2, 26.6, 26.3, 26.7, currentSuhuAir];
-    tdsData = [510, 540, 575, 605, 630, 615, currentTds];
-    levelAirData = [88, 84, 81, 77, 73, 70, currentLevel];
-    suhuUdaraData = [24.8, 26.0, 27.5, 28.7, 28.0, 27.4, currentSuhuUdara];
+    // Bulanan data matching user screenshot
+    suhuAirData = [30.1, 28.5, 29.2, 29.0, 28.6, 29.8, 28.0, currentSuhuAir];
+    tdsData = [15, 0, 10, 5, 0, 20, 0, currentTds];
+    levelAirData = [88, 84, 81, 77, 73, 70, 68, currentLevel];
+    suhuUdaraData = [24.8, 26.0, 27.5, 28.7, 28.0, 27.4, 27.0, currentSuhuUdara];
   }
 
   // Update datasets dynamically without flickering or glitches
@@ -843,6 +1218,12 @@ function updateChartsData() {
     state.charts.suhuUdara.data.labels = labels;
     state.charts.suhuUdara.data.datasets[0].data = suhuUdaraData;
     state.charts.suhuUdara.update();
+  }
+
+  if (state.charts.miniSuhuUdara) {
+    const miniDataset = state.charts.miniSuhuUdara.data.datasets[0];
+    miniDataset.data[miniDataset.data.length - 1] = currentSuhuUdara;
+    state.charts.miniSuhuUdara.update();
   }
 }
 

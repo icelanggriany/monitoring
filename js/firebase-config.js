@@ -148,6 +148,99 @@ class AquaponicsFirebase {
     console.log("[Firebase] Schedule removed at index:", index);
     return true;
   }
+
+  // Subscribe to live notifications from Firebase /notifications.json
+  subscribeNotifications(callback) {
+    this.onNotifUpdateCallback = callback;
+    this.fetchNotifications();
+    if (!this.notifTimer) {
+      this.notifTimer = setInterval(() => this.fetchNotifications(), 3000);
+    }
+  }
+
+  async fetchNotifications() {
+    try {
+      const response = await fetch(`${this.baseUrl}/notifications.json?t=${Date.now()}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && this.onNotifUpdateCallback) {
+          let list = [];
+          if (Array.isArray(data)) {
+            list = data.filter(Boolean);
+          } else if (typeof data === 'object') {
+            list = Object.values(data);
+          }
+          list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          this.onNotifUpdateCallback(list);
+        }
+      }
+    } catch (err) {
+      console.warn("[Firebase] Error fetching notifications:", err);
+    }
+  }
+
+  // Push notification to /notifications/{id}.json
+  async pushNotification(notifObj) {
+    try {
+      const id = notifObj.id || `notif_${Date.now()}`;
+      const payload = {
+        id,
+        title: notifObj.title || "Notifikasi System",
+        desc: notifObj.desc || "",
+        type: notifObj.type || "info",
+        source: notifObj.source || "system",
+        timestamp: notifObj.timestamp || Date.now(),
+        read: false
+      };
+      await fetch(`${this.baseUrl}/notifications/${id}.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      this.fetchNotifications();
+      return true;
+    } catch (err) {
+      console.warn("[Firebase] Could not push notification:", err);
+      return false;
+    }
+  }
+
+  // Mark all notifications as read in Firebase
+  async markNotificationsRead() {
+    try {
+      const response = await fetch(`${this.baseUrl}/notifications.json`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && typeof data === 'object') {
+          for (let key in data) {
+            if (data[key] && !data[key].read) {
+              fetch(`${this.baseUrl}/notifications/${key}/read.json`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(true)
+              }).catch(() => {});
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[Firebase] Could not mark notifications read:", err);
+    }
+  }
+
+  // Clear all notifications from Firebase
+  async clearNotifications() {
+    try {
+      await fetch(`${this.baseUrl}/notifications.json`, {
+        method: "DELETE"
+      });
+      if (this.onNotifUpdateCallback) this.onNotifUpdateCallback([]);
+      return true;
+    } catch (err) {
+      console.warn("[Firebase] Could not clear notifications:", err);
+      return false;
+    }
+  }
 }
 
 // Global instance
