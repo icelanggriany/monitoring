@@ -2096,8 +2096,9 @@ input:checked + .slider:before {
   padding: 24px 20px 20px 20px;
   transform: translateX(100%);
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, visibility 0.3s ease;
 }
 
 body.dark-mode .ig-notif-modal {
@@ -2108,6 +2109,7 @@ body.dark-mode .ig-notif-modal {
 
 .ig-notif-modal.active {
   opacity: 1;
+  visibility: visible;
   pointer-events: auto;
   transform: translateX(0);
 }
@@ -2147,6 +2149,44 @@ body.dark-mode .ig-title {
 .btn-hapus-semua:hover {
   background: #DBEAFE;
   color: #1D4ED8;
+}
+
+.ig-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ig-drawer-close-btn {
+  background: rgba(0, 0, 0, 0.08);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #374151;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.ig-drawer-close-btn:hover {
+  background: rgba(0, 0, 0, 0.15);
+  color: #111827;
+}
+
+body.dark-mode .ig-drawer-close-btn {
+  background: rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+}
+
+body.dark-mode .ig-drawer-close-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #FFFFFF;
 }
 
 .ig-section-header {
