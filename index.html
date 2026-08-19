@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monitoring IoT - Smart Akuaponik</title>
+  
+  <!-- Google Fonts: Inter (Formal Sans-Serif) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="light-mode">
+
+  <div class="dashboard-layout">
+
+    <!-- LEFT SIDEBAR (DESKTOP) -->
+    <aside class="sidebar">
+      <!-- Brand Logo Header -->
+      <div class="sidebar-brand">
+        <div class="brand-logo-box">
+          <svg viewBox="0 0 40 40" class="brand-svg">
+            <path d="M 20 4 L 36 34 L 4 34 Z" fill="none" stroke="#2563EB" stroke-width="4" stroke-linejoin="round"/>
+            <path d="M 20 12 L 28 28 L 12 28 Z" fill="#2563EB" opacity="0.2"/>
+          </svg>
+        </div>
+        <div class="brand-text-group">
+          <h2 class="brand-name">Smart<br/>Akuaponik</h2>
+          <span class="brand-status-online"><i class="fa-solid fa-circle dot-online"></i> Terhubung (Firebase)</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="tab-beranda">
+          <i class="fa-solid fa-house"></i>
+          <span>Beranda</span>
+        </button>
+        <button class="nav-item" data-tab="tab-monitoring">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Monitoring</span>
+        </button>
+        <button class="nav-item" data-tab="tab-control">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Control</span>
+        </button>
+        <button class="nav-item" data-tab="tab-config">
+          <i class="fa-solid fa-gear"></i>
+          <span>Config</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="device-status-badge">
+          <i class="fa-solid fa-circle dot-online"></i>
+          <span>Alat Terhubung (Sangat Baik (Ideal))</span>
+        </div>
+        <button class="logout-btn" id="sidebar-logout-btn">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Keluar (Logout)</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN BODY SECTION -->
+    <div class="main-body">
+
+      <!-- TOP HEADER -->
+      <header class="app-header">
+        <h1 class="page-title" id="header-title-text">Monitoring IoT</h1>
+
+        <div class="header-actions">
+          <button class="icon-btn" id="theme-toggle-btn" title="Ganti Tema Mode">
+            <i class="fa-regular fa-moon" id="theme-icon"></i>
+          </button>
+          <button class="icon-btn notification-bell-btn" id="bell-btn" title="Notifikasi">
+            <i class="fa-regular fa-bell"></i>
+            <span class="bell-badge" id="bell-count">3</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- NOTIFICATION DROPDOWN MODAL -->
+      <div class="notification-dropdown" id="notification-dropdown">
+        <div class="notif-header">
+          <span><i class="fa-solid fa-bell"></i> Notifikasi Sistem</span>
+          <button class="btn-text-clear" id="clear-notif-btn">Hapus Semua</button>
+        </div>
+        <div class="notif-list" id="notif-list-container">
+          <div class="notif-item info">
+            <div class="notif-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <div class="notif-content">
+              <div class="notif-title">Gateway IoT Terhubung</div>
+              <div class="notif-desc">ESP32 Gateway terhubung ke LoRa Channel 65.</div>
+              <div class="notif-time">Baru saja</div>
+            </div>
+          </div>
+          <div class="notif-item warning">
+            <div class="notif-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="notif-content">
+              <div class="notif-title">Nutrisi Air Rendah</div>
+              <div class="notif-desc">TDS terdeteksi &lt; 400 PPM. Disarankan penambahan nutrisi.</div>
+              <div class="notif-time">5 menit yang lalu</div>
+            </div>
+          </div>
+          <div class="notif-item success">
+            <div class="notif-icon"><i class="fa-solid fa-utensils"></i></div>
+            <div class="notif-content">
+              <div class="notif-title">Pemberian Pakan Otomatis</div>
+              <div class="notif-desc">Pakan 1 Porsi berhasil dikeluarkan jam 08:00.</div>
+              <div class="notif-time">2 jam yang lalu</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN CONTENT PANELS -->
+      <main class="app-content">
+
+        <!-- ================= TAB 1: BERANDA ================= -->
+        <section class="tab-panel active" id="tab-beranda">
+          
+          <div class="dashboard-grid-layout">
+
+            <!-- LEFT DASHBOARD COLUMN -->
+            <div class="dash-col-left">
+
+              <!-- Card 1: Status Ekosistem -->
+              <div class="card ecosystem-card">
+                <div class="card-header-flex">
+                  <h3 class="card-title">Status Ekosistem</h3>
+                  <span class="live-text-badge">Real-time</span>
+                </div>
+
+                <div class="ecosystem-grid">
+                  <!-- Subcard Ikan -->
+                  <div class="eco-subcard">
+                    <div class="eco-card-title">Kondisi Ikan</div>
+                    <div class="eco-image-wrapper fish-bg">
+                      <svg viewBox="0 0 240 100" class="eco-svg">
+                        <rect width="240" height="100" fill="#78B0D0" rx="10"/>
+                        <!-- Animated Water Layer -->
+                        <path id="eco-water-path" d="M 0 50 Q 60 40 120 50 T 240 45 L 240 100 L 0 100 Z" fill="#4B82A6" class="animated-water-path"/>
+                        
+                        <!-- Animated Swimming Fish -->
+                        <g id="eco-fish-group" class="animated-fish-group">
+                          <path id="eco-fish-body" d="M 40 50 Q 65 35 90 50 Q 105 42 112 36 L 108 50 L 112 64 Q 105 58 90 50 Q 65 65 40 50 Z" fill="#5E6C7D"/>
+                          <circle cx="52" cy="46" r="2.5" fill="#FFF"/>
+                          <circle cx="53" cy="46" r="1.2" fill="#000"/>
+                        </g>
+                        
+                        <!-- Animated Floating Air Bubbles -->
+                        <g id="eco-bubbles-group" class="animated-bubbles-group">
+                          <circle cx="100" cy="40" r="3" fill="#EBF5FF" opacity="0.7" class="bubble bubble-1"/>
+                          <circle cx="108" cy="30" r="4" fill="#EBF5FF" opacity="0.8" class="bubble bubble-2"/>
+                          <circle cx="115" cy="20" r="2" fill="#EBF5FF" opacity="0.6" class="bubble bubble-3"/>
+                        </g>
+                      </svg>
+                    </div>
+                    <div class="eco-status-pill green-pill" id="eco-fish-status-pill">
+                      <span class="status-dot green"></span> Air Normal (26.3&deg;C): Ikan Sehat &amp; Aktif 🐟
+                    </div>
+                  </div>
+
+                  <!-- Subcard Tanaman -->
+                  <div class="eco-subcard">
+                    <div class="eco-card-title">Kondisi Tanaman</div>
+                    <div class="eco-image-wrapper plant-bg">
+                      <svg viewBox="0 0 240 100" class="eco-svg">
+                        <rect width="240" height="100" fill="#6B7280" rx="10"/>
+                        <rect y="40" width="240" height="60" fill="#4B5563"/>
+                        <!-- Pot & Hydroponic Plant -->
+                        <path d="M 100 55 L 140 55 L 132 40 L 108 40 Z" fill="#1F2937"/>
+                        
+                        <!-- Animated Swaying Plant Leaves -->
+                        <g id="eco-plant-leaves-group" class="animated-plant-leaves">
+                          <path id="eco-leaf-left" d="M 120 40 Q 100 20 85 28 Q 105 12 120 40 Z" fill="#10B981" class="leaf leaf-left"/>
+                          <path id="eco-leaf-right" d="M 120 40 Q 140 20 155 28 Q 135 12 120 40 Z" fill="#059669" class="leaf leaf-right"/>
+                          <path id="eco-leaf-center" d="M 120 40 Q 120 10 112 5 Q 124 10 120 40 Z" fill="#34D399" class="leaf leaf-center"/>
+                        </g>
+                        
+                        <!-- Animated Roots & Nutrient Flow -->
+                        <g id="eco-plant-roots-group" class="animated-plant-roots">
+                          <path d="M 112 55 Q 108 75 105 90 M 120 55 Q 120 80 122 95 M 128 55 Q 132 75 135 90" fill="none" stroke="#D1D5DB" stroke-width="2" stroke-dasharray="6,4" class="root-lines"/>
+                          <circle cx="108" cy="70" r="1.5" fill="#60A5FA" class="nutrient-drop drop-1"/>
+                          <circle cx="120" cy="75" r="2.0" fill="#38BDF8" class="nutrient-drop drop-2"/>
+                          <circle cx="130" cy="68" r="1.5" fill="#60A5FA" class="nutrient-drop drop-3"/>
+                        </g>
+                      </svg>
+                    </div>
+                    <div class="eco-status-pill green-pill" id="eco-plant-status-pill">
+                      <span class="status-dot green"></span> Nutrisi Optimal (598 PPM): Tanaman Subur 🌿
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: Monitoring Jadwal Pakan -->
+              <div class="card feed-card">
+                <div class="card-header-flex">
+                  <h3 class="card-title flex-align-center gap-8">
+                    <i class="fa-solid fa-circle-info text-primary"></i> Monitoring Jadwal Pakan
+                  </h3>
+                  <a href="#" class="link-action" id="manage-feed-link">Kelola &rarr;</a>
+                </div>
+
+                <div class="schedule-summary-grid">
+                  <div class="feed-summary-box">
+                    <div class="box-label">Pemberian Pakan</div>
+                    <div class="box-val text-primary" id="feed-countdown">- Mnt Lagi</div>
+                  </div>
+                  <div class="feed-summary-box">
+                    <div class="box-label">Jadwal Berikutnya</div>
+                    <div class="box-val" id="feed-next-time">16:00 (2 Porsi)</div>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Card 3: Status Perangkat & IoT Gateway -->
+              <div class="card gateway-card">
+                <div class="gateway-flex">
+                  <div class="gateway-dot-wrapper">
+                    <span class="status-dot green blink-large"></span>
+                  </div>
+                  <div class="gateway-info">
+                    <div class="gateway-title">Status Perangkat &amp; IoT Gateway</div>
+                    <div class="gateway-sub">Transmisi Data Realtime Terhubung</div>
+                  </div>
+                  <div class="gateway-badge">Aktif</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- RIGHT DASHBOARD COLUMN (METRIC CARDS GRID) -->
+            <div class="dash-col-right">
+
+              <!-- Card 1: Suhu Air Kolam -->
+              <div class="card metric-card" id="card-suhu-air">
+                <div class="metric-header">
+                  <div class="metric-title-flex">
+                    <span class="icon-circle green-circle"><i class="fa-solid fa-temperature-three-quarters text-emerald"></i></span>
+                    <span class="metric-label font-bold">Suhu Air Kolam</span>
+                  </div>
+                </div>
+
+                <div class="sparkline-trend-box wave-container">
+                  <svg viewBox="0 0 200 40" preserveAspectRatio="none" class="sparkline-svg wave-svg">
+                    <defs>
+                      <linearGradient id="wave-grad-1" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#10B981" stop-opacity="0.45"/>
+                        <stop offset="100%" stop-color="#10B981" stop-opacity="0.0"/>
+                      </linearGradient>
+                      <linearGradient id="wave-grad-2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#34D399" stop-opacity="0.3"/>
+                        <stop offset="100%" stop-color="#34D399" stop-opacity="0.0"/>
+                      </linearGradient>
+                    </defs>
+                    
+                    <!-- Back Wave Layer -->
+                    <g class="wave-group-back">
+                      <path d="M 0 22 Q 25 14 50 22 T 100 22 T 150 22 T 200 22 T 250 22 T 300 22 T 350 22 T 400 22 L 400 40 L 0 40 Z" fill="url(#wave-grad-2)"/>
+                      <path d="M 0 22 Q 25 14 50 22 T 100 22 T 150 22 T 200 22 T 250 22 T 300 22 T 350 22 T 400 22" fill="none" stroke="#34D399" stroke-width="1.8" opacity="0.8"/>
+                    </g>
+
+                    <!-- Front Wave Layer -->
+                    <g class="wave-group-front">
+                      <path d="M 0 18 Q 25 26 50 18 T 100 18 T 150 18 T 200 18 T 250 18 T 300 18 T 350 18 T 400 18 L 400 40 L 0 40 Z" fill="url(#wave-grad-1)"/>
+                      <path d="M 0 18 Q 25 26 50 18 T 100 18 T 150 18 T 200 18 T 250 18 T 300 18 T 350 18 T 400 18" fill="none" stroke="#10B981" stroke-width="2.8" id="wave-line-front"/>
+                    </g>
+                  </svg>
+                </div>
+
+                <div class="metric-body">
+                  <div class="metric-number text-emerald" id="val-suhu-air">26.3&deg;C</div>
+                  <div class="metric-sub-row">
+                    <span class="sub-text">Optimal (24 - 32&deg;C)</span>
+                    <span class="badge-status status-green" id="badge-suhu-air"><span class="status-dot green"></span> Stabil</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: TDS Nutrisi Air -->
+              <div class="card metric-card" id="card-tds">
+                <div class="metric-header">
+                  <div class="metric-title-flex">
+                    <span class="icon-circle sky-circle"><i class="fa-solid fa-droplet text-sky"></i></span>
+                    <span class="metric-label font-bold">TDS Nutrisi Air</span>
+                  </div>
+                </div>
+
+                <div class="gauge-metric-center">
+                  <div class="circle-gauge-small" id="gauge-tds-ring">
+                    <span class="gauge-unit">PPM</span>
+                  </div>
+                  <div class="gauge-text-side">
+                    <div class="metric-number text-sky" id="val-tds">0</div>
+                    <div class="sub-text">Target: 400-900</div>
+                    <div class="warning-alert-text" id="status-tds">
+                      Nutrisi Rendah (Air Bersih)
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3: Suhu Udara Ambient -->
+              <div class="card metric-card" id="card-suhu-udara">
+                <div class="metric-header">
+                  <div class="metric-title-flex">
+                    <span class="icon-circle amber-circle"><i class="fa-solid fa-sun text-amber"></i></span>
+                    <span class="metric-label font-bold">Suhu Udara Ambient</span>
+                  </div>
+                </div>
+
+                <div class="bar-chart-graphic" id="bar-chart-container">
+                  <div class="bar-col" style="height: 45%;"></div>
+                  <div class="bar-col" style="height: 65%;"></div>
+                  <div class="bar-col" style="height: 90%;"></div>
+                  <div class="bar-col" style="height: 75%;"></div>
+                  <div class="bar-col" style="height: 55%;"></div>
+                  <div class="bar-col" style="height: 85%;"></div>
+                  <div class="bar-col" style="height: 100%;"></div>
+                </div>
+
+                <div class="metric-body">
+                  <div class="metric-number text-amber" id="val-suhu-udara">27.6&deg;C</div>
+                  <div class="metric-sub-row">
+                    <span class="sub-text">Rentang (20-33&deg;C)</span>
+                    <span class="badge-status status-amber" id="badge-suhu-udara"><span class="status-dot amber"></span> Normal</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 4: Kelembaban Udara -->
+              <div class="card metric-card" id="card-kelembaban">
+                <div class="metric-header">
+                  <div class="metric-title-flex">
+                    <span class="icon-circle purple-circle"><i class="fa-solid fa-cloud text-purple"></i></span>
+                    <span class="metric-label font-bold">Kelembaban Udara</span>
+                  </div>
+                </div>
+
+                <div class="ring-gauge-flex">
+                  <div class="ring-circle-box purple-border" id="ring-kelembaban-circle">
+                    <span class="ring-center-unit">%RH</span>
+                  </div>
+                  <div class="ring-text-side">
+                    <div class="metric-number text-purple" id="val-kelembaban">85%</div>
+                    <div class="sub-text">Target 60-90%</div>
+                    <div class="text-purple font-weight-700" id="status-kelembaban">Optimal</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 5: Level Air Kolam -->
+              <div class="card metric-card span-col-2" id="card-level-air">
+                <div class="metric-header">
+                  <div class="metric-title-flex">
+                    <span class="icon-circle teal-circle"><i class="fa-solid fa-water text-teal"></i></span>
+                    <span class="metric-label font-bold">Level Air Kolam</span>
+                  </div>
+                </div>
+
+                <div class="water-ring-flex">
+                  <div class="water-progress-ring">
+                    <svg viewBox="0 0 100 100" class="ring-svg">
+                      <circle cx="50" cy="50" r="40" class="ring-bg"/>
+                      <circle cx="50" cy="50" r="40" class="ring-fill teal-stroke" id="water-ring-fill" stroke-dasharray="251.2" stroke-dashoffset="79"/>
+                    </svg>
+                    <div class="ring-text-center">
+                      <span class="ring-title" id="water-ring-title">WATER</span>
+                    </div>
+                  </div>
+
+                  <div class="water-info-side">
+                    <div class="metric-number-huge text-teal" id="val-level-air">66.9%</div>
+                    <span class="badge-status status-green margin-v-4" id="badge-level-air">
+                      <span class="status-dot green"></span> Pompa Aman
+                    </span>
+                    <div class="sub-text">Ketinggian Air Kolam</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ================= TAB 2: MONITORING (CHARTS) ================= -->
+        <section class="tab-panel" id="tab-monitoring">
+
+          <!-- Filter Tab Group (Segmented Bar) -->
+          <div class="filter-tab-group">
+            <button class="filter-btn active" data-period="harian">Harian</button>
+            <button class="filter-btn" data-period="mingguan">Mingguan</button>
+            <button class="filter-btn" data-period="bulanan">Bulanan</button>
+          </div>
+
+          <!-- Charts Stack Grid (Full Width 1-Column Layout) -->
+          <div class="charts-container">
+
+            <!-- Chart 1: Suhu Air Kolam -->
+            <div class="card chart-card">
+              <div class="chart-card-header">
+                <div class="chart-title">
+                  <i class="fa-solid fa-temperature-high text-emerald"></i> Grafik Suhu Air Kolam (&deg;C)
+                </div>
+                <span class="chart-metric-badge badge-blue" id="badge-chart-suhu-air">26.3 &deg;C</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-suhu-air"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 2: TDS Nutrisi Air -->
+            <div class="card chart-card">
+              <div class="chart-card-header">
+                <div class="chart-title">
+                  <i class="fa-solid fa-flask text-emerald"></i> Grafik TDS Nutrisi Air (PPM)
+                </div>
+                <span class="chart-metric-badge badge-green" id="badge-chart-tds">0 PPM</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-tds"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 3: Level Air Kolam -->
+            <div class="card chart-card">
+              <div class="chart-card-header">
+                <div class="chart-title">
+                  <i class="fa-solid fa-water text-teal"></i> Grafik Level Air Kolam (%)
+                </div>
+                <span class="chart-metric-badge badge-cyan" id="badge-chart-level-air">66.9%</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-level-air"></canvas>
+              </div>
+            </div>
+
+            <!-- Chart 4: Suhu Udara Ambient -->
+            <div class="card chart-card">
+              <div class="chart-card-header">
+                <div class="chart-title">
+                  <i class="fa-solid fa-sun text-amber"></i> Grafik Suhu Udara Ambient (&deg;C)
+                </div>
+                <span class="chart-metric-badge badge-orange" id="badge-chart-suhu-udara">27.6 &deg;C</span>
+              </div>
+              <div class="chart-canvas-wrapper">
+                <canvas id="chart-suhu-udara"></canvas>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================= TAB 3: CONTROL ================= -->
+        <section class="tab-panel" id="tab-control">
+
+          <!-- 6-Channel Relays Grid (White & Blue Theme - Active HIGH / COM & HIGH) -->
+          <div class="relay-cards-grid">
+
+            <!-- CH 01 -->
+            <div class="relay-card-styled" id="card-relay-1">
+              <div class="relay-top-bar">
+                <span class="relay-badge-pill relay-badge-off" id="badge-relay-1">OFF (LOW)</span>
+              </div>
+              <div class="relay-name-box" id="name-box-relay-1">
+                <input type="text" class="relay-device-input" id="name-relay-1" value="ATS Switch Solar Panel" readonly />
+                <div class="relay-inner-icon" id="icon-anim-1">
+                  <i class="fa-solid fa-sun fa-spin-pulse text-amber"></i>
+                </div>
+              </div>
+              <div class="relay-bottom-row">
+                <div class="relay-status-group">
+                  <span class="status-dot-mini gray" id="dot-relay-1"></span>
+                  <span class="status-text-styled" id="text-relay-1">TERPUTUS (LOW)</span>
+                </div>
+                <button class="btn-relay-action btn-relay-off" id="btn-relay-1" onclick="toggleRelayChannel(1)">HIDUPKAN</button>
+              </div>
+            </div>
+
+            <!-- CH 02 -->
+            <div class="relay-card-styled" id="card-relay-2">
+              <div class="relay-top-bar">
+                <span class="relay-badge-pill relay-badge-off" id="badge-relay-2">OFF (LOW)</span>
+              </div>
+              <div class="relay-name-box" id="name-box-relay-2">
+                <input type="text" class="relay-device-input" id="name-relay-2" value="Pompa Pembesaran" readonly />
+                <div class="relay-inner-icon" id="icon-anim-2">
+                  <i class="fa-solid fa-water fa-bounce text-blue"></i>
+                </div>
+              </div>
+              <div class="relay-bottom-row">
+                <div class="relay-status-group">
+                  <span class="status-dot-mini gray" id="dot-relay-2"></span>
+                  <span class="status-text-styled" id="text-relay-2">TERPUTUS (LOW)</span>
+                </div>
+                <button class="btn-relay-action btn-relay-off" id="btn-relay-2" onclick="toggleRelayChannel(2)">HIDUPKAN</button>
+              </div>
+            </div>
+
+            <!-- CH 03 -->
+            <div class="relay-card-styled" id="card-relay-3">
+              <div class="relay-top-bar">
+                <span class="relay-badge-pill relay-badge-off" id="badge-relay-3">OFF (LOW)</span>
+              </div>
+              <div class="relay-name-box" id="name-box-relay-3">
+                <input type="text" class="relay-device-input" id="name-relay-3" value="Pompa Peremajaan" readonly />
+                <div class="relay-inner-icon" id="icon-anim-3">
+                  <i class="fa-solid fa-seedling fa-beat text-emerald"></i>
+                </div>
+              </div>
+              <div class="relay-bottom-row">
+                <div class="relay-status-group">
+                  <span class="status-dot-mini gray" id="dot-relay-3"></span>
+                  <span class="status-text-styled" id="text-relay-3">TERPUTUS (LOW)</span>
+                </div>
+                <button class="btn-relay-action btn-relay-off" id="btn-relay-3" onclick="toggleRelayChannel(3)">HIDUPKAN</button>
+              </div>
+            </div>
+
+            <!-- CH 04 -->
+            <div class="relay-card-styled" id="card-relay-4">
+              <div class="relay-top-bar">
+                <span class="relay-badge-pill relay-badge-off" id="badge-relay-4">OFF (LOW)</span>
+              </div>
+              <div class="relay-name-box" id="name-box-relay-4">
+                <input type="text" class="relay-device-input" id="name-relay-4" value="Pompa Sirkulasi" readonly />
+                <div class="relay-inner-icon" id="icon-anim-4">
+                  <i class="fa-solid fa-rotate fa-spin text-cyan"></i>
+                </div>
+              </div>
+              <div class="relay-bottom-row">
+                <div class="relay-status-group">
+                  <span class="status-dot-mini gray" id="dot-relay-4"></span>
+                  <span class="status-text-styled" id="text-relay-4">TERPUTUS (LOW)</span>
+                </div>
+                <button class="btn-relay-action btn-relay-off" id="btn-relay-4" onclick="toggleRelayChannel(4)">HIDUPKAN</button>
+              </div>
+            </div>
+
+            <!-- CH 05 -->
+            <div class="relay-card-styled" id="card-relay-5">
+              <div class="relay-top-bar">
+                <span class="relay-badge-pill relay-badge-off" id="badge-relay-5">OFF (LOW)</span>
+              </div>
+              <div class="relay-name-box" id="name-box-relay-5">
+                <input type="text" class="relay-device-input" id="name-relay-5" value="Aerator Oksigen" readonly />
+                <div class="relay-inner-icon" id="icon-anim-5">
+                  <i class="fa-solid fa-wind fa-fade text-sky"></i>
+                </div>
+              </div>
+              <div class="relay-bottom-row">
+                <div class="relay-status-group">
+                  <span class="status-dot-mini gray" id="dot-relay-5"></span>
+                  <span class="status-text-styled" id="text-relay-5">TERPUTUS (LOW)</span>
+                </div>
+                <button class="btn-relay-action btn-relay-off" id="btn-relay-5" onclick="toggleRelayChannel(5)">HIDUPKAN</button>
+              </div>
+            </div>
+
+            <!-- CH 06 -->
+            <div class="relay-card-styled" id="card-relay-6">
+              <div class="relay-top-bar">
+                <span class="relay-badge-pill relay-badge-off" id="badge-relay-6">OFF (LOW)</span>
+              </div>
+              <div class="relay-name-box" id="name-box-relay-6">
+                <input type="text" class="relay-device-input" id="name-relay-6" value="Feeder Pakan" readonly />
+                <div class="relay-inner-icon feeder-svg-box" id="icon-anim-6">
+                  <svg class="feeder-eating-svg" viewBox="0 0 50 26" width="50" height="26">
+                    <!-- Falling pellets -->
+                    <circle class="pellet-dot p1" cx="36" cy="4" r="2.2" fill="#F59E0B" />
+                    <circle class="pellet-dot p2" cx="34" cy="11" r="1.8" fill="#D97706" />
+                    <circle class="pellet-dot p3" cx="38" cy="17" r="1.8" fill="#F59E0B" />
+                    
+                    <!-- Swimming & Eating Fish -->
+                    <g class="fish-eating-group">
+                      <!-- Fish Body -->
+                      <path d="M 22 13 C 16 7 8 8 3 6 C 6 12 6 14 3 20 C 8 18 16 19 22 13 Z" fill="#2563EB" />
+                      <!-- Fish Tail Fin -->
+                      <path d="M 4 13 L 0 8 L 1 13 L 0 18 Z" fill="#1D4ED8" />
+                      <!-- Fish Eye -->
+                      <circle cx="18" cy="11" r="1.2" fill="#FFFFFF" />
+                      <circle cx="18.3" cy="11" r="0.6" fill="#0F172A" />
+                    </g>
+                  </svg>
+                </div>
+              </div>
+              <div class="relay-bottom-row">
+                <div class="relay-status-group">
+                  <span class="status-dot-mini gray" id="dot-relay-6"></span>
+                  <span class="status-text-styled" id="text-relay-6">TERPUTUS (LOW)</span>
+                </div>
+                <button class="btn-relay-action btn-relay-off" id="btn-relay-6" onclick="toggleRelayChannel(6)">BERI PAKAN</button>
+              </div>
+            </div>
+
+          </div>
+
+            <!-- Card Kontrol Pakan Auto / Manual -->
+            <div class="card feed-control-card">
+              <div class="feed-control-title">Kontrol Pakan</div>
+
+              <!-- Feed Mode Tabs -->
+              <div class="segmented-control">
+                <button class="segment-btn active" id="tab-feed-auto">Auto</button>
+                <button class="segment-btn" id="tab-feed-manual">Manual</button>
+              </div>
+
+              <!-- Auto Mode Container -->
+              <div id="feed-auto-container" class="feed-mode-panel active">
+                <div class="schedule-header-flex">
+                  <span class="schedule-subheading">Jadwal (Auto)</span>
+                  <button class="btn-link-add" id="add-schedule-btn">+ Tambah Jam</button>
+                </div>
+
+                <div class="schedule-list" id="schedule-items-list">
+                  <div class="schedule-item">
+                    <div class="sched-left">
+                      <i class="fa-regular fa-clock"></i>
+                      <span class="sched-time">08:00</span>
+                    </div>
+                    <div class="sched-right">
+                      <span class="sched-portion">1 Porsi</span>
+                      <button class="sched-delete-btn" onclick="deleteSchedule(0)">Hapus</button>
+                    </div>
+                  </div>
+
+                  <div class="schedule-item">
+                    <div class="sched-left">
+                      <i class="fa-regular fa-clock"></i>
+                      <span class="sched-time">16:00</span>
+                    </div>
+                    <div class="sched-right">
+                      <span class="sched-portion">2 Porsi</span>
+                      <button class="sched-delete-btn" onclick="deleteSchedule(1)">Hapus</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manual Mode Container -->
+              <div id="feed-manual-container" class="feed-mode-panel">
+                <div class="manual-feed-box">
+                  <p class="manual-desc">Keluarkan pakan ikan secara manual sekarang:</p>
+                  <div class="portion-selector">
+                    <label>Jumlah Porsi:</label>
+                    <select id="manual-portion-select" class="form-select">
+                      <option value="1">1 Porsi (Standard)</option>
+                      <option value="2">2 Porsi (Extra)</option>
+                      <option value="3">3 Porsi (Maximum)</option>
+                    </select>
+                  </div>
+                  <button class="btn-primary-gradient width-100 margin-top-12" id="trigger-manual-feed-btn">
+                    <i class="fa-solid fa-paper-plane"></i> Jalankan Feeder Pakan (Relay 6)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+        </section>
+
+        <!-- ================= TAB 4: CONFIG ================= -->
+        <section class="tab-panel" id="tab-config">
+
+          <h2 class="config-section-title">Config</h2>
+
+          <div class="config-menu-grid">
+
+            <!-- Card 1: WiFi -->
+            <div class="card config-item-card" id="cfg-wifi">
+              <div class="config-item-left">
+                <div class="config-icon-blue"><i class="fa-solid fa-wifi"></i></div>
+                <span class="config-title-text">Pengaturan WiFi</span>
+              </div>
+              <i class="fa-solid fa-chevron-right config-arrow"></i>
+            </div>
+
+            <!-- Card 2: Server -->
+            <div class="card config-item-card" id="cfg-server">
+              <div class="config-item-left">
+                <div class="config-icon-blue"><i class="fa-solid fa-database"></i></div>
+                <span class="config-title-text">Pengaturan Server</span>
+              </div>
+              <i class="fa-solid fa-chevron-right config-arrow"></i>
+            </div>
+
+            <!-- Card 3: Calibration -->
+            <div class="card config-item-card" id="cfg-calibration">
+              <div class="config-item-left">
+                <div class="config-icon-blue"><i class="fa-solid fa-bullseye"></i></div>
+                <span class="config-title-text">Kalibrasi Sensor</span>
+              </div>
+              <i class="fa-solid fa-chevron-right config-arrow"></i>
+            </div>
+
+            <!-- Card 4: Firebase -->
+            <div class="card config-item-card" id="cfg-firebase">
+              <div class="config-item-left">
+                <div class="config-icon-amber"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <span class="config-title-text">Integrasi Firebase</span>
+              </div>
+              <div class="config-item-right">
+                <span class="status-green-text">Tersambung</span>
+                <i class="fa-solid fa-chevron-right config-arrow"></i>
+              </div>
+            </div>
+
+            <!-- Card 5: Telegram -->
+            <div class="card config-item-card" id="cfg-notif">
+              <div class="config-item-left">
+                <div class="config-icon-blue"><i class="fa-regular fa-bell"></i></div>
+                <span class="config-title-text">Notifikasi Telegram</span>
+              </div>
+              <div class="config-item-right">
+                <span class="status-green-text">&bull; Terhubung (Bot)</span>
+                <i class="fa-solid fa-chevron-right config-arrow"></i>
+              </div>
+            </div>
+
+            <!-- Card 6: About -->
+            <div class="card config-item-card" id="cfg-about">
+              <div class="config-item-left">
+                <div class="config-icon-blue"><i class="fa-regular fa-circle-question"></i></div>
+                <span class="config-title-text">Tentang Aplikasi</span>
+              </div>
+              <i class="fa-solid fa-chevron-right config-arrow"></i>
+            </div>
+
+            <!-- Card 7: Logout (Full Width) -->
+            <div class="card config-item-card logout-full-card" id="cfg-logout">
+              <div class="config-item-left">
+                <div class="config-icon-red"><i class="fa-solid fa-arrow-right-from-bracket"></i></div>
+                <span class="config-title-text danger-text">Keluar Akun</span>
+              </div>
+              <i class="fa-solid fa-chevron-right config-arrow danger-arrow"></i>
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
+
+    </div>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="tab-beranda">
+        <i class="fa-solid fa-house"></i>
+        <span>Beranda</span>
+      </button>
+      <button class="nav-item" data-tab="tab-monitoring">
+        <i class="fa-solid fa-chart-line"></i>
+        <span>Monitoring</span>
+      </button>
+      <button class="nav-item" data-tab="tab-control">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Control</span>
+      </button>
+      <button class="nav-item" data-tab="tab-config">
+        <i class="fa-solid fa-gear"></i>
+        <span>Config</span>
+      </button>
+    </nav>
+
+        <!-- MODAL CONFIRMATION FOR FEEDER PAKAN -->
+    <div class="modal-overlay" id="modal-feeder-confirm">
+      <div class="modal-card" style="max-width: 420px; width: 90%; border-radius: 24px; padding: 24px; background: #FFFFFF; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        <div class="modal-content-styled">
+          <div class="info-box-amber" style="background: #FEF3C7; color: #92400E; padding: 12px 16px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-utensils text-amber"></i>
+            <span>Konfirmasi Pemberian Pakan Ikan</span>
+          </div>
+          
+          <p style="font-size:14px; color:#334155; margin-top:14px; line-height:1.5; font-weight:500;">
+            Apakah Anda yakin ingin memberi pakan ikan sekarang?
+          </p>
+
+          <!-- Portion Stepper in Modal -->
+          <div style="margin-top: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 16px; text-align: center;">
+            <div style="font-size: 13px; font-weight: 700; color: #64748B; margin-bottom: 10px;">Jumlah Porsi Pakan:</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+              <button id="modal-confirm-portion-minus" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font-size: 18px; font-weight: 800; color: #0F172A; cursor: pointer;" onclick="changeConfirmPortion(-1)">-</button>
+              <span id="modal-confirm-portion-val" style="font-size: 18px; font-weight: 800; color: #2563EB; min-width: 80px;">1 Porsi</span>
+              <button id="modal-confirm-portion-plus" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font-size: 18px; font-weight: 800; color: #0F172A; cursor: pointer;" onclick="changeConfirmPortion(1)">+</button>
+            </div>
+          </div>
+
+          <div style="font-size:12px; color:#64748B; background:#F1F5F9; padding:10px 14px; border-radius:10px; margin-top:14px; display: flex; align-items: center; gap: 6px;">
+            <span>⏱️</span>
+            <span><b>Durasi Motor:</b> Aktif 10 Detik per Porsi &bull; Otomatis Mati</span>
+          </div>
+
+          <div class="modal-actions-row" style="margin-top:20px; display:flex; gap:12px;">
+            <button class="btn-modal-close" id="btn-cancel-feed" style="flex:1; padding:12px; border-radius:12px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; font-weight:700; cursor:pointer;">Batal</button>
+            <button class="btn-modal-save" id="btn-confirm-feed" style="flex:1; padding:12px; border-radius:12px; border:none; background:#2563EB; color:#FFFFFF; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,0.3);">Ya, Beri Pakan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL POPUP FOR ADDING FEED SCHEDULE (EXACT DESIGN MATCH) -->
+    <div class="modal-overlay" id="modal-add-schedule">
+      <div class="modal-card" style="max-width: 400px; width: 90%; padding: 28px 24px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+        <!-- Title -->
+        <h3 style="font-size: 20px; font-weight: 800; color: #0F172A; margin: 0 0 20px 0; text-align: left;">Tambah Jadwal Pakan</h3>
+
+        <!-- Subtitle 1 -->
+        <div style="font-size: 13px; font-weight: 600; color: #64748B; text-align: center; margin-bottom: 12px;">Atur Waktu Pakan</div>
+
+        <!-- Time Picker Container -->
+        <div style="background: #F8FAFC; border: 1px solid #F1F5F9; border-radius: 20px; padding: 20px 24px; display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 24px;">
+          <!-- Hour Column -->
+          <div style="display: flex; flex-direction: column; align-items: center; width: 64px;">
+            <button id="sched-hour-up" style="background: none; border: none; color: #2563EB; font-size: 14px; cursor: pointer; padding: 6px; transition: transform 0.1s;" onclick="changeSchedHour(1)">▲</button>
+            <span id="sched-hour-val" style="font-size: 40px; font-weight: 800; color: #0F172A; line-height: 1; user-select: none;">07</span>
+            <button id="sched-hour-down" style="background: none; border: none; color: #2563EB; font-size: 14px; cursor: pointer; padding: 6px; transition: transform 0.1s;" onclick="changeSchedHour(-1)">▼</button>
+          </div>
+
+          <!-- Separator -->
+          <span style="font-size: 36px; font-weight: 800; color: #475569; margin-top: -4px;">:</span>
+
+          <!-- Minute Column -->
+          <div style="display: flex; flex-direction: column; align-items: center; width: 64px;">
+            <button id="sched-min-up" style="background: none; border: none; color: #2563EB; font-size: 14px; cursor: pointer; padding: 6px; transition: transform 0.1s;" onclick="changeSchedMin(1)">▲</button>
+            <span id="sched-min-val" style="font-size: 40px; font-weight: 800; color: #0F172A; line-height: 1; user-select: none;">45</span>
+            <button id="sched-min-down" style="background: none; border: none; color: #2563EB; font-size: 14px; cursor: pointer; padding: 6px; transition: transform 0.1s;" onclick="changeSchedMin(-1)">▼</button>
+          </div>
+        </div>
+
+        <!-- Subtitle 2 -->
+        <div style="font-size: 13px; font-weight: 600; color: #64748B; text-align: center; margin-bottom: 12px;">Porsi Pakan</div>
+
+        <!-- Portion Stepper -->
+        <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 28px;">
+          <button id="sched-portion-minus" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 20px; font-weight: 700; color: #0F172A; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="changeSchedPortion(-1)">-</button>
+          <span id="sched-portion-val" style="font-size: 18px; font-weight: 800; color: #0F172A; min-width: 80px; text-align: center;">1 Porsi</span>
+          <button id="sched-portion-plus" style="width: 44px; height: 44px; border-radius: 12px; border: 1px solid #E2E8F0; background: #FFFFFF; font-size: 20px; font-weight: 700; color: #0F172A; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);" onclick="changeSchedPortion(1)">+</button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 12px; align-items: center;">
+          <button id="modal-sched-cancel-btn" style="padding: 14px 24px; border-radius: 16px; border: 1px solid #E2E8F0; background: #FFFFFF; color: #0F172A; font-size: 15px; font-weight: 700; cursor: pointer;">Batal</button>
+          <button id="modal-sched-save-btn" style="flex: 1; padding: 14px 24px; border-radius: 16px; border: none; background: #2563EB; color: #FFFFFF; font-size: 16px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay" id="config-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modal-title">Pengaturan</h3>
+          <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body">
+          <!-- Dynamic Content loaded via JS -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="modal-cancel-btn">Batal</button>
+          <button class="btn-primary" id="modal-save-btn">Simpan</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Custom Scripts -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
