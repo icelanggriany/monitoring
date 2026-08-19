@@ -6,12 +6,12 @@ function updateConfirmPortionUI() {
   if (valEl) valEl.innerText = `${currentPortionToFeed} Porsi`;
 }
 
-window.changeConfirmPortion = function(delta) {
+window.changeConfirmPortion = function (delta) {
   currentPortionToFeed = Math.max(1, Math.min(5, currentPortionToFeed + delta));
   updateConfirmPortionUI();
 };
 
-window.showFeedModal = function(portion = 1) {
+window.showFeedModal = function (portion = 1) {
   currentPortionToFeed = parseInt(portion) || 1;
   updateConfirmPortionUI();
   const confirmModal = document.getElementById('modal-feeder-confirm');
@@ -26,7 +26,7 @@ function updateConfirmPortionUI() {
   if (valEl) valEl.innerText = `${currentPortionToFeed} Porsi`;
 }
 
-window.changeConfirmPortion = function(delta) {
+window.changeConfirmPortion = function (delta) {
   currentPortionToFeed = Math.max(1, Math.min(5, currentPortionToFeed + delta));
   updateConfirmPortionUI();
 };
@@ -35,7 +35,7 @@ window.changeConfirmPortion = function(delta) {
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
     if (window.aquaponicsDB && !window.aquaponicsDB.addSchedule) {
-      window.aquaponicsDB.addSchedule = function(time, portion) {
+      window.aquaponicsDB.addSchedule = function (time, portion) {
         console.log("[Firebase RTDB] Schedule saved:", time, portion);
         return Promise.resolve(true);
       };
@@ -68,6 +68,8 @@ const state = {
     suhu_udara: 27.1,
     kelembaban: 84,
     level_air: 68.5,
+    voltase_aki: 12.4,
+    status_daya: 'Aki 12V',
     status_gateway: 'Aktif'
   },
   relays: [0, 0, 0, 0, 0, 0],
@@ -147,20 +149,20 @@ let currentNotifFilter = 'all';
 
 function getValidTimestamp(n) {
   if (!n) return Date.now();
-  
+
   let val = n.timestamp !== undefined ? n.timestamp : n.time;
-  
+
   if (typeof val === 'number' && !isNaN(val) && val > 1000000000) {
     return val;
   }
-  
+
   if (typeof val === 'string') {
     let parsed = Number(val);
     if (!isNaN(parsed) && parsed > 1000000000) {
       return parsed;
     }
   }
-  
+
   if (n.id && typeof n.id === 'string' && n.id.includes('notif_')) {
     const parts = n.id.split('_');
     if (parts.length >= 2) {
@@ -284,8 +286,8 @@ function renderNotifications() {
   }
 
   if (unreadSubtext) {
-    unreadSubtext.innerText = unreadCount > 0 
-      ? `${unreadCount} Notifikasi Belum Dibaca` 
+    unreadSubtext.innerText = unreadCount > 0
+      ? `${unreadCount} Notifikasi Belum Dibaca`
       : `Tidak ada notifikasi baru`;
   }
 
@@ -329,10 +331,10 @@ function renderNotifications() {
     const isTelegram = n.source === 'telegram' || (n.title && n.title.toLowerCase().includes('telegram'));
     const isUnread = !n.read;
     const timeStr = formatNotifTime(n);
-    
+
     let avatarClass = isTelegram ? 'source-telegram' : `type-${n.type || 'warning'}`;
-    let avatarIcon = isTelegram 
-      ? '<i class="fa-brands fa-telegram"></i>' 
+    let avatarIcon = isTelegram
+      ? '<i class="fa-brands fa-telegram"></i>'
       : `<i class="fa-solid ${iconMap[n.type] || 'fa-triangle-exclamation'}"></i>`;
 
     let titleText = n.title || 'Notifikasi';
@@ -421,7 +423,10 @@ function initRealtimeDataBinding() {
         if (data.suhu_udara !== undefined) { state.telemetry.suhu_udara = parseFloat(data.suhu_udara); updated = true; }
         if (data.kelembaban !== undefined) { state.telemetry.kelembaban = parseFloat(data.kelembaban); updated = true; }
         if (data.level_air !== undefined) { state.telemetry.level_air = parseFloat(data.level_air); updated = true; }
-        
+        if (data.voltase_aki !== undefined) { state.telemetry.voltase_aki = parseFloat(data.voltase_aki); updated = true; }
+        if (data.v_bat !== undefined) { state.telemetry.voltase_aki = parseFloat(data.v_bat); updated = true; }
+        if (data.status_daya !== undefined) { state.telemetry.status_daya = data.status_daya; updated = true; }
+
         if (data.relays && Array.isArray(data.relays)) {
           if (!state.lastRelayToggleTime || (Date.now() - state.lastRelayToggleTime > 15000)) {
             state.relays = data.relays;
@@ -551,7 +556,7 @@ function updateUI() {
   const elSuhuAir = document.getElementById('val-suhu-air');
   const badgeSuhuAir = document.getElementById('badge-suhu-air');
   const isSuhuAirCritical = suhuAir < 24.0 || suhuAir > 32.0;
-  
+
   if (isSuhuAirCritical) {
     elSuhuAir.classList.add('text-critical-red');
     elSuhuAir.classList.remove('text-emerald');
@@ -568,29 +573,51 @@ function updateUI() {
     }
   }
   elSuhuAir.innerHTML = `${suhuAir.toFixed(1)}&deg;C`;
-  
+
   // 2. TDS Nutrisi Air (Optimal 400 - 900 PPM)
   const tdsVal = Math.round(state.telemetry.tds);
   const elTds = document.getElementById('val-tds');
   const tdsStatusEl = document.getElementById('status-tds');
+  const tdsRingFill = document.getElementById('tds-ring-fill');
   const isTdsCritical = tdsVal < 400 || tdsVal > 900;
-  
+
   if (isTdsCritical) {
-    elTds.classList.add('text-critical-red');
-    elTds.classList.remove('text-sky');
+    if (elTds) {
+      elTds.classList.add('text-critical-red');
+      elTds.classList.remove('text-sky');
+    }
     if (tdsStatusEl) {
-      tdsStatusEl.className = 'warning-alert-text text-critical-red';
-      tdsStatusEl.innerHTML = `${critIcon}${tdsVal < 400 ? 'Nutrisi Rendah' : 'Nutrisi Pekat'}`;
+      tdsStatusEl.className = 'status-warning-amber';
+      tdsStatusEl.style.color = '#D97706';
+      tdsStatusEl.innerHTML = `⚠️ ${tdsVal < 400 ? 'Nutrisi Rendah (Air Bersih)' : 'Nutrisi Pekat'}`;
     }
   } else {
-    elTds.classList.remove('text-critical-red');
-    elTds.classList.add('text-sky');
+    if (elTds) {
+      elTds.classList.remove('text-critical-red');
+      elTds.classList.add('text-sky');
+    }
     if (tdsStatusEl) {
       tdsStatusEl.className = 'success-text-normal';
       tdsStatusEl.innerHTML = '<span class="status-dot green"></span> Nutrisi Optimal';
     }
   }
-  elTds.innerHTML = `${tdsVal}`;
+  if (elTds) elTds.innerHTML = `${tdsVal}`;
+
+  // SVG TDS Ring: Circumference = 150.8
+  // Nilai 0 PPM = Offset 150.8 (Lingkaran Biru 0 / Kosong Total)
+  // Nilai > 0 PPM = Menyesuaikan persentase (Target 1000 PPM = 100%)
+  if (tdsRingFill) {
+    const tdsPct = Math.min(100, Math.max(0, (tdsVal / 1000) * 100));
+    const offset = 150.8 - (150.8 * tdsPct) / 100;
+    tdsRingFill.style.strokeDashoffset = offset;
+
+    // Warna MERAH HANYA jika angka PPM naik tinggi melampaui batas pekat (> 900 PPM)
+    if (tdsVal > 900) {
+      tdsRingFill.style.stroke = '#EF4444';
+    } else {
+      tdsRingFill.style.stroke = '#2563EB';
+    }
+  }
 
   // 3. Suhu Udara Ambient (Optimal 20 - 33°C)
   const suhuUdara = state.telemetry.suhu_udara;
@@ -599,44 +626,78 @@ function updateUI() {
   const isSuhuUdaraCritical = suhuUdara < 20.0 || suhuUdara > 33.0;
 
   if (isSuhuUdaraCritical) {
-    elSuhuUdara.classList.add('text-critical-red');
-    elSuhuUdara.classList.remove('text-amber');
+    if (elSuhuUdara) {
+      elSuhuUdara.style.color = '#EF4444';
+    }
     if (badgeSuhuUdara) {
-      badgeSuhuUdara.className = 'badge-status status-red';
-      badgeSuhuUdara.innerHTML = `${critIcon}${suhuUdara < 20.0 ? 'Udara Dingin!' : 'Udara Panas!'}`;
+      badgeSuhuUdara.className = 'air-temp-status-pill red-pill';
+      badgeSuhuUdara.style.background = '#FEE2E2';
+      badgeSuhuUdara.style.color = '#DC2626';
+      badgeSuhuUdara.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${suhuUdara < 20.0 ? 'Udara Dingin!' : 'Udara Panas!'}`;
     }
   } else {
-    elSuhuUdara.classList.remove('text-critical-red');
-    elSuhuUdara.classList.add('text-amber');
+    if (elSuhuUdara) {
+      elSuhuUdara.style.color = '#EA580C';
+    }
     if (badgeSuhuUdara) {
-      badgeSuhuUdara.className = 'badge-status status-amber';
-      badgeSuhuUdara.innerHTML = '<span class="status-dot amber"></span> Normal';
+      badgeSuhuUdara.className = 'air-temp-status-pill';
+      badgeSuhuUdara.style.background = '#FFEDD5';
+      badgeSuhuUdara.style.color = '#C2410C';
+      badgeSuhuUdara.innerHTML = '<span class="air-status-dot"></span> Normal';
     }
   }
-  elSuhuUdara.innerHTML = `${suhuUdara.toFixed(1)}&deg;C`;
+  if (elSuhuUdara) elSuhuUdara.innerHTML = `${suhuUdara.toFixed(1)}&deg;C`;
+
+  // Scale Equalizer Bars dynamically according to current air temperature
+  const equalizerBars = document.querySelectorAll('#air-temp-equalizer .air-bar');
+  if (equalizerBars.length > 0) {
+    const tempRatio = Math.max(0.5, Math.min(1.4, suhuUdara / 27));
+    const baseHeights = [35, 58, 90, 72, 48, 82, 96];
+    equalizerBars.forEach((bar, idx) => {
+      const scaledH = Math.round(baseHeights[idx] * tempRatio);
+      bar.style.height = `${Math.min(100, Math.max(15, scaledH))}%`;
+    });
+  }
 
   // 4. Kelembaban Udara (Optimal 50 - 90%)
   const kelembaban = Math.round(state.telemetry.kelembaban);
   const elKelembaban = document.getElementById('val-kelembaban');
   const statusKelembaban = document.getElementById('status-kelembaban');
+  const humidityRingFill = document.getElementById('humidity-ring-fill');
   const isKelembabanCritical = kelembaban < 50 || kelembaban > 90;
 
   if (isKelembabanCritical) {
-    elKelembaban.classList.add('text-critical-red');
-    elKelembaban.classList.remove('text-purple');
+    if (elKelembaban) {
+      elKelembaban.classList.add('text-critical-red');
+      elKelembaban.classList.remove('text-purple');
+    }
     if (statusKelembaban) {
       statusKelembaban.className = 'warning-alert-text text-critical-red font-weight-700';
       statusKelembaban.innerHTML = `${critIcon}${kelembaban < 50 ? 'Udara Kering' : 'Udara Lembab'}`;
     }
   } else {
-    elKelembaban.classList.remove('text-critical-red');
-    elKelembaban.classList.add('text-purple');
+    if (elKelembaban) {
+      elKelembaban.classList.remove('text-critical-red');
+      elKelembaban.classList.add('text-purple');
+    }
     if (statusKelembaban) {
       statusKelembaban.className = 'badge-status status-purple';
       statusKelembaban.innerHTML = '<span class="status-dot purple"></span> Optimal';
     }
   }
-  elKelembaban.innerHTML = `${kelembaban}%`;
+  if (elKelembaban) elKelembaban.innerHTML = `${kelembaban}%`;
+
+  // SVG Humidity Ring: Circumference = 157.1 (Tanpa Getar)
+  if (humidityRingFill) {
+    const humPct = Math.min(100, Math.max(0, kelembaban));
+    const offset = 157.1 - (157.1 * humPct) / 100;
+    humidityRingFill.style.strokeDashoffset = offset;
+    if (isKelembabanCritical) {
+      humidityRingFill.style.stroke = '#EF4444';
+    } else {
+      humidityRingFill.style.stroke = '#8B5CF6';
+    }
+  }
 
   const levelAir = state.telemetry.level_air;
   const elLevelAir = document.getElementById('val-level-air');
@@ -680,6 +741,35 @@ function updateUI() {
   }
   if (isSuhuAirCritical) {
     sendTelegramAlert('web_suhu_air', `⚠️ <b>PERINGATAN SUHU AIR KOLAM!</b>\nSuhu air kolam terdeteksi <b>${suhuAir.toFixed(1)}°C</b>.\n\n<i>Harap periksa sirkulasi air kolam!</i>`);
+  }
+
+  // 5. Voltase Aki & Status Daya (Auto Cut-Off 11.7V & Switching Panel Surya)
+  const vAki = (state.telemetry.voltase_aki !== undefined) ? state.telemetry.voltase_aki : 12.4;
+  const elVoltase = document.getElementById('val-voltase-aki');
+  const pillDaya = document.getElementById('pill-status-daya');
+  const isVoltageLow = (vAki <= 11.7 && vAki > 5.0);
+
+  if (elVoltase) {
+    elVoltase.innerHTML = `${vAki.toFixed(1)} V`;
+    if (isVoltageLow) {
+      elVoltase.className = 'power-val text-critical-red font-weight-800';
+    } else {
+      elVoltase.className = 'power-val text-blue font-weight-800';
+    }
+  }
+
+  if (pillDaya) {
+    if (isVoltageLow || state.relays[0] === 1 || state.telemetry.status_daya === 'Panel Surya') {
+      pillDaya.className = 'power-pill status-power-solar';
+      pillDaya.innerHTML = '☀️ Panel Surya (Cut-off Aktif)';
+    } else {
+      pillDaya.className = 'power-pill status-power-normal';
+      pillDaya.innerHTML = '🔋 Aki 12V (Normal)';
+    }
+  }
+
+  if (isVoltageLow) {
+    sendTelegramAlert('web_voltage_low', `⚠️ <b>PERINGATAN VOLTASE AKI KRITIS!</b>\nVoltase aki terdeteksi <b>${vAki.toFixed(1)} V</b> (<= 11.7V).\n\n<i>Sistem otomatis memutus mesin dan beralih ke <b>Panel Surya (ATS Switch ON)</b>!</i>`);
   }
 
   // Update Chart Badges
@@ -803,7 +893,7 @@ function updateFeedingCountdown() {
       if (!state.lastTriggeredSchedules[triggerKey]) {
         state.lastTriggeredSchedules[triggerKey] = true;
         console.log(`[Auto Feeder Triggered] Scheduled time hit: ${timeSchedStr} (${sched.portion} Portion)`);
-        
+
         // Trigger Feeding Action (Relay 6, Firebase & Telegram Alert)
         if (typeof triggerDirectFeeding === 'function') {
           triggerDirectFeeding(sched.portion);
@@ -900,7 +990,7 @@ function initCharts() {
         boxHeight: 8,
         boxPadding: 4,
         callbacks: {
-          label: function(context) {
+          label: function (context) {
             let label = context.dataset.label || '';
             if (label) {
               label += ': ';
@@ -1274,7 +1364,7 @@ function triggerDirectFeeding(portion = 1) {
   }
 
   addNotification('success', 'Pakan Ikan Dikirim', `Feeder Pakan aktif selama ${feedDuration / 1000} detik (${pVal} Porsi)`);
-  
+
   const feedMsg = `\u{1F41F} <b>[PEMBERIAN PAKAN BERHASIL]</b>\n` +
     `\u{26A1} <b>Feeder Pakan (Relay 6):</b> Aktif ${feedDuration / 1000} Detik\n` +
     `\u{1F35A} <b>Jumlah Pakan:</b> ${pVal} Porsi\n` +
@@ -1426,17 +1516,17 @@ function initFeedingScheduler() {
     if (pEl) pEl.innerText = `${currentSchedPortion} Porsi`;
   }
 
-  window.changeSchedHour = function(delta) {
+  window.changeSchedHour = function (delta) {
     currentSchedHour = (currentSchedHour + delta + 24) % 24;
     updateSchedPickerUI();
   };
 
-  window.changeSchedMin = function(delta) {
+  window.changeSchedMin = function (delta) {
     currentSchedMin = (currentSchedMin + delta + 60) % 60;
     updateSchedPickerUI();
   };
 
-  window.changeSchedPortion = function(delta) {
+  window.changeSchedPortion = function (delta) {
     currentSchedPortion = Math.max(1, Math.min(5, currentSchedPortion + delta));
     updateSchedPickerUI();
   };
@@ -1475,11 +1565,11 @@ function initFeedingScheduler() {
         updateFeedingCountdown();
 
         if (window.aquaponicsDB && typeof window.aquaponicsDB.addSchedule === 'function') {
-          try { window.aquaponicsDB.addSchedule(timeVal, portionVal); } catch(e) {}
+          try { window.aquaponicsDB.addSchedule(timeVal, portionVal); } catch (e) { }
         }
 
         addNotification('success', 'Jadwal Ditambahkan', `Pemberian pakan dijadwalkan pukul ${timeVal} (${portionVal} Porsi)`);
-      } catch(err) {
+      } catch (err) {
         console.warn("Error saving schedule:", err);
       } finally {
         if (schedModal) schedModal.classList.remove('active');
@@ -1533,7 +1623,7 @@ function renderSchedules() {
   `).join('');
 }
 
-window.deleteSchedule = function(index) {
+window.deleteSchedule = function (index) {
   state.schedules.splice(index, 1);
   renderSchedules();
   updateFeedingCountdown();

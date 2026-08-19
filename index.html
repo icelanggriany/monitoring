@@ -233,6 +233,18 @@
                   </div>
                   <div class="gateway-badge">Aktif</div>
                 </div>
+
+                <!-- Power & Solar ATS Sub-bar -->
+                <div class="power-status-subbar" id="power-status-subbar">
+                  <div class="power-item">
+                    <span class="power-label"><i class="fa-solid fa-car-battery text-blue"></i> Voltase Aki:</span>
+                    <span class="power-val text-blue font-weight-800" id="val-voltase-aki">12.4 V</span>
+                  </div>
+                  <div class="power-item">
+                    <span class="power-label"><i class="fa-solid fa-solar-panel text-amber"></i> Sumber Daya:</span>
+                    <span class="power-pill status-power-normal" id="pill-status-daya">🔋 Aki 12V (Normal)</span>
+                  </div>
+                </div>
               </div>
 
             </div>
@@ -242,11 +254,13 @@
 
               <!-- Card 1: Suhu Air Kolam -->
               <div class="card metric-card" id="card-suhu-air">
-                <div class="metric-header">
-                  <div class="metric-title-flex">
-                    <span class="icon-circle green-circle"><i
-                        class="fa-solid fa-temperature-three-quarters text-emerald"></i></span>
-                    <span class="metric-label font-bold">Suhu Air Kolam</span>
+                <div class="card-header-flex-top">
+                  <div class="card-title-with-outline-icon">
+                    <span class="icon-outline-emerald"><i class="fa-regular fa-temperature-three-quarters"></i></span>
+                    <span class="card-title-text-bold">Suhu Air Kolam</span>
+                  </div>
+                  <div class="card-top-right-badge badge-emerald">
+                    <i class="fa-solid fa-temperature-three-quarters text-emerald"></i>
                   </div>
                 </div>
 
@@ -284,7 +298,7 @@
                 </div>
 
                 <div class="metric-body">
-                  <div class="metric-number text-emerald" id="val-suhu-air">26.3&deg;C</div>
+                  <div class="metric-number text-emerald" id="val-suhu-air">27.9&deg;C</div>
                   <div class="metric-sub-row">
                     <span class="sub-text">Optimal (24 - 32&deg;C)</span>
                     <span class="badge-status status-green" id="badge-suhu-air"><span class="status-dot green"></span>
@@ -293,81 +307,126 @@
                 </div>
               </div>
 
-              <!-- Card 2: TDS Nutrisi Air -->
-              <div class="card metric-card" id="card-tds">
-                <div class="metric-header">
-                  <div class="metric-title-flex">
-                    <span class="icon-circle sky-circle"><i class="fa-solid fa-droplet text-sky"></i></span>
-                    <span class="metric-label font-bold">TDS Nutrisi Air</span>
+              <!-- Card 2: TDS Nutrisi Air (EXACT MATCH REFERENCE SCREENSHOT) -->
+              <div class="card metric-card tds-card-custom" id="card-tds">
+                <div class="card-header-flex-top">
+                  <div class="card-title-with-outline-icon">
+                    <span class="icon-outline-blue"><i class="fa-regular fa-droplet"></i></span>
+                    <span class="card-title-text-bold">TDS Nutrisi Air</span>
+                  </div>
+                  <div class="card-top-right-badge badge-blue">
+                    <i class="fa-solid fa-droplet text-sky"></i>
                   </div>
                 </div>
 
-                <div class="gauge-metric-center">
-                  <div class="circle-gauge-small" id="gauge-tds-ring">
-                    <span class="gauge-unit">PPM</span>
+                <div class="gauge-metric-center-row">
+                  <div class="ring-gauge-wrapper-box">
+                    <svg viewBox="0 0 64 64" class="ring-gauge-svg">
+                      <!-- Soft background track ring -->
+                      <circle cx="32" cy="32" r="24" fill="none" stroke="#E0F2FE" stroke-width="7" />
+                      <!-- Dynamic progress fill ring -->
+                      <circle id="tds-ring-fill" cx="32" cy="32" r="24" fill="none" stroke="#2563EB" stroke-width="7"
+                        stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"
+                        transform="rotate(-90 32 32)"
+                        style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease;" />
+                    </svg>
+                    <div class="ring-center-white-circle">
+                      <span class="gauge-unit-bold text-slate">PPM</span>
+                    </div>
                   </div>
-                  <div class="gauge-text-side">
-                    <div class="metric-number text-sky" id="val-tds">0</div>
-                    <div class="sub-text">Target: 400-900</div>
-                    <div class="warning-alert-text text-critical-red font-bold" id="status-tds">
-                      <i class="fa-solid fa-circle-exclamation text-critical-red"></i> Nutrisi Rendah
+                  <div class="gauge-info-text-side">
+                    <div class="metric-number-dark" id="val-tds">0</div>
+                    <div class="sub-text-gray">Target: 400-900</div>
+                    <div class="status-warning-amber" id="status-tds">
+                      ⚠️ Nutrisi Rendah (Air Bersih)
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Card 3: Suhu Udara Ambient -->
-              <div class="card metric-card" id="card-suhu-udara">
-                <div class="metric-header">
-                  <div class="metric-title-flex">
-                    <span class="icon-circle amber-circle"><i class="fa-solid fa-sun text-amber"></i></span>
-                    <span class="metric-label font-bold">Suhu Udara Ambient</span>
+              <div class="card metric-card air-temp-card" id="card-suhu-udara">
+                <div class="card-header-flex-top">
+                  <div class="card-title-with-outline-icon">
+                    <span class="icon-outline-amber"><i class="fa-regular fa-sun"></i></span>
+                    <span class="card-title-text-bold">Suhu Udara Ambient</span>
+                  </div>
+                  <div class="card-top-right-badge badge-amber">
+                    <i class="fa-solid fa-cloud-sun text-amber"></i>
                   </div>
                 </div>
 
-                <div class="mini-chart-box" style="height: 50px; width: 100%; margin: 8px 0;">
-                  <canvas id="mini-chart-suhu-udara"></canvas>
+                <!-- Animated Equalizer Bar Visualization -->
+                <div class="air-temp-equalizer" id="air-temp-equalizer">
+                  <div class="air-bar bar-1"></div>
+                  <div class="air-bar bar-2"></div>
+                  <div class="air-bar bar-3"></div>
+                  <div class="air-bar bar-4"></div>
+                  <div class="air-bar bar-5"></div>
+                  <div class="air-bar bar-6"></div>
+                  <div class="air-bar bar-7"></div>
                 </div>
 
-                <div class="metric-body">
-                  <div class="metric-number text-amber" id="val-suhu-udara">27.6&deg;C</div>
-                  <div class="metric-sub-row">
-                    <span class="sub-text">Rentang (20-33&deg;C)</span>
-                    <span class="badge-status status-amber" id="badge-suhu-udara"><span class="status-dot amber"></span>
-                      Normal</span>
+                <div class="air-temp-body">
+                  <div class="air-temp-value" id="val-suhu-udara">28.0&deg;C</div>
+                  <div class="air-temp-sub-row">
+                    <span class="air-temp-range">Rentang (20-33&deg;C)</span>
+                    <span class="air-temp-status-pill" id="badge-suhu-udara">
+                      <span class="air-status-dot"></span> Normal
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <!-- Card 4: Kelembaban Udara -->
-              <div class="card metric-card" id="card-kelembaban">
-                <div class="metric-header">
-                  <div class="metric-title-flex">
-                    <span class="icon-circle purple-circle"><i class="fa-solid fa-cloud text-purple"></i></span>
-                    <span class="metric-label font-bold">Kelembaban Udara</span>
+              <!-- Card 4: Kelembaban Udara (BALANCED FULL CARD DESIGN - NO EMPTY VOID) -->
+              <div class="card metric-card humidity-card-custom" id="card-kelembaban">
+                <div class="card-header-flex-top">
+                  <div class="card-title-with-outline-icon">
+                    <span class="icon-outline-purple"><i class="fa-regular fa-cloud"></i></span>
+                    <span class="card-title-text-bold">Kelembaban Udara</span>
+                  </div>
+                  <div class="card-top-right-badge badge-purple">
+                    <i class="fa-solid fa-cloud text-purple"></i>
                   </div>
                 </div>
 
-                <div class="ring-gauge-flex">
-                  <div class="ring-circle-box purple-border" id="ring-kelembaban-circle">
-                    <span class="ring-center-unit">%RH</span>
-                  </div>
-                  <div class="ring-text-side">
-                    <div class="metric-number text-purple" id="val-kelembaban">85%</div>
-                    <div class="sub-text">Target 60-90%</div>
-                    <div class="warning-alert-text text-critical-red font-bold" id="status-kelembaban">
-                      <i class="fa-solid fa-circle-exclamation text-critical-red"></i> Udara Lembab
+                <!-- Center Ring Gauge Visual (Padat di Tengah) -->
+                <div class="humidity-center-visual-box">
+                  <div class="ring-gauge-wrapper-box humidity-ring-large-box">
+                    <svg viewBox="0 0 64 64" class="ring-gauge-svg">
+                      <!-- Soft background track ring -->
+                      <circle cx="32" cy="32" r="25" fill="none" stroke="#F3E8FF" stroke-width="7" />
+                      <!-- Dynamic progress fill ring -->
+                      <circle id="humidity-ring-fill" cx="32" cy="32" r="25" fill="none" stroke="#8B5CF6"
+                        stroke-width="7" stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="31.4"
+                        transform="rotate(-90 32 32)"
+                        style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease;" />
+                    </svg>
+                    <div class="ring-center-white-circle humidity-inner-large-circle">
+                      <span class="gauge-unit-bold text-purple-unit">%RH</span>
                     </div>
                   </div>
+                </div>
+
+                <!-- Bottom Metric Body (Optimal Di Samping Angka) -->
+                <div class="air-temp-body">
+                  <div class="val-status-inline-row">
+                    <span class="metric-number-dark text-purple-val" id="val-kelembaban">82%</span>
+                    <span class="air-temp-status-pill status-purple-pill" id="status-kelembaban">Optimal</span>
+                  </div>
+                  <div class="sub-text-gray">Target 60-90%</div>
                 </div>
               </div>
 
               <!-- Card 5: Level Air Kolam -->
               <div class="card metric-card span-col-2" id="card-level-air">
-                <div class="metric-header">
-                  <div class="metric-title-flex">
-                    <span class="icon-circle teal-circle"><i class="fa-solid fa-water text-teal"></i></span>
-                    <span class="metric-label font-bold">Level Air Kolam</span>
+                <div class="card-header-flex-top">
+                  <div class="card-title-with-outline-icon">
+                    <span class="icon-outline-teal"><i class="fa-solid fa-water"></i></span>
+                    <span class="card-title-text-bold">Level Air Kolam</span>
+                  </div>
+                  <div class="card-top-right-badge badge-teal">
+                    <i class="fa-solid fa-water text-teal"></i>
                   </div>
                 </div>
 

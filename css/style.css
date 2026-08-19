@@ -10,11 +10,11 @@
   --text-main: #1E293B;
   --text-muted: #64748B;
   --text-light: #94A3B8;
-  
+
   --primary: #2563EB;
   --primary-hover: #1D4ED8;
   --primary-light: #EFF6FF;
-  
+
   --emerald: #10B981;
   --emerald-bg: #ECFDF5;
   --sky: #0284C7;
@@ -71,7 +71,8 @@ body.dark-mode {
   -webkit-tap-highlight-color: transparent;
 }
 
-html, body {
+html,
+body {
   min-height: 100%;
   height: auto !important;
   overflow-x: hidden !important;
@@ -86,7 +87,12 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.dashboard-layout, .main-body, .app-content, .tab-panel, .dashboard-grid-layout, .card {
+.dashboard-layout,
+.main-body,
+.app-content,
+.tab-panel,
+.dashboard-grid-layout,
+.card {
   touch-action: pan-y !important;
 }
 
@@ -113,7 +119,16 @@ canvas {
 }
 
 /* Ensure interactive buttons/links remain clickable */
-a, button, input, select, textarea, .nav-item, .icon-btn, .config-item-card, .btn-action-lg, .switch-toggle-btn {
+a,
+button,
+input,
+select,
+textarea,
+.nav-item,
+.icon-btn,
+.config-item-card,
+.btn-action-lg,
+.switch-toggle-btn {
   pointer-events: auto !important;
 }
 
@@ -122,9 +137,17 @@ a, button, input, select, textarea, .nav-item, .icon-btn, .config-item-card, .bt
   align-items: center;
 }
 
-.gap-8 { gap: 8px; }
-.width-100 { width: 100%; }
-.margin-v-4 { margin: 4px 0; }
+.gap-8 {
+  gap: 8px;
+}
+
+.width-100 {
+  width: 100%;
+}
+
+.margin-v-4 {
+  margin: 4px 0;
+}
 
 /* ================= MAIN LAYOUT GRID (SIDEBAR + CONTENT) ================= */
 .dashboard-layout {
@@ -776,15 +799,20 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes swimFish {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translate(0, 0) rotate(0deg);
   }
+
   25% {
     transform: translate(8px, -3px) rotate(-2deg);
   }
+
   50% {
     transform: translate(18px, 1px) rotate(1deg);
   }
+
   75% {
     transform: translate(7px, 3px) rotate(3deg);
   }
@@ -793,9 +821,11 @@ body.dark-mode .ig-notif-desc {
 .bubble-1 {
   animation: bubbleFloat 2.8s infinite linear;
 }
+
 .bubble-2 {
   animation: bubbleFloat 3.5s infinite linear 0.7s;
 }
+
 .bubble-3 {
   animation: bubbleFloat 2.2s infinite linear 1.2s;
 }
@@ -805,10 +835,12 @@ body.dark-mode .ig-notif-desc {
     transform: translateY(12px) scale(0.6);
     opacity: 0.3;
   }
+
   50% {
     transform: translateY(-8px) scale(1);
     opacity: 0.9;
   }
+
   100% {
     transform: translateY(-24px) scale(1.2);
     opacity: 0;
@@ -823,6 +855,7 @@ body.dark-mode .ig-notif-desc {
   0% {
     transform: translateY(0) scaleY(1);
   }
+
   100% {
     transform: translateY(2px) scaleY(1.04);
   }
@@ -834,12 +867,16 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes plantSway {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: rotate(0deg);
   }
+
   25% {
     transform: rotate(2.5deg);
   }
+
   75% {
     transform: rotate(-2.5deg);
   }
@@ -849,18 +886,28 @@ body.dark-mode .ig-notif-desc {
   animation: rootPulse 3s infinite ease-in-out alternate;
 }
 
-.drop-1 { animation: nutrientFlow 2.5s infinite linear; }
-.drop-2 { animation: nutrientFlow 3.2s infinite linear 0.8s; }
-.drop-3 { animation: nutrientFlow 2.8s infinite linear 1.5s; }
+.drop-1 {
+  animation: nutrientFlow 2.5s infinite linear;
+}
+
+.drop-2 {
+  animation: nutrientFlow 3.2s infinite linear 0.8s;
+}
+
+.drop-3 {
+  animation: nutrientFlow 2.8s infinite linear 1.5s;
+}
 
 @keyframes nutrientFlow {
   0% {
     transform: translateY(-10px);
     opacity: 0;
   }
+
   30% {
     opacity: 1;
   }
+
   100% {
     transform: translateY(22px);
     opacity: 0;
@@ -868,8 +915,15 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes rootPulse {
-  0% { stroke-dashoffset: 0; opacity: 0.7; }
-  100% { stroke-dashoffset: 10; opacity: 1; }
+  0% {
+    stroke-dashoffset: 0;
+    opacity: 0.7;
+  }
+
+  100% {
+    stroke-dashoffset: 10;
+    opacity: 1;
+  }
 }
 
 .eco-status-pill {
@@ -919,8 +973,13 @@ body.dark-mode .ig-notif-desc {
   shrink: 0;
 }
 
-.status-dot.green { background-color: var(--emerald); }
-.status-dot.amber { background-color: var(--amber); }
+.status-dot.green {
+  background-color: var(--emerald);
+}
+
+.status-dot.amber {
+  background-color: var(--amber);
+}
 
 .blink-large {
   width: 12px;
@@ -929,8 +988,15 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes blinkAnim {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
 }
 
 /* CARD 2: MONITORING JADWAL PAKAN */
@@ -987,7 +1053,7 @@ body.dark-mode .ig-notif-desc {
   transform: translateY(-1px);
 }
 
-/* CARD 3: STATUS GATEWAY */
+/* CARD 3: STATUS GATEWAY & POWER */
 .gateway-flex {
   display: flex;
   align-items: center;
@@ -1021,6 +1087,67 @@ body.dark-mode .ig-notif-desc {
   color: var(--emerald);
 }
 
+.power-status-subbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--card-border);
+  gap: 12px;
+}
+
+.power-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.power-label {
+  color: var(--text-muted);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.power-val {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.power-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.status-power-normal {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.status-power-solar {
+  background: #FEF3C7;
+  color: #D97706;
+  border: 1px solid #FDE68A;
+}
+
+body.dark-mode .status-power-normal {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+}
+
+body.dark-mode .status-power-solar {
+  background: rgba(245, 158, 11, 0.2);
+  color: #FCD34D;
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
 /* RIGHT COLUMN METRIC CARDS */
 .metric-card {
   padding: 18px;
@@ -1051,17 +1178,45 @@ body.dark-mode .ig-notif-desc {
   font-size: 14px;
 }
 
-.green-circle { background: #ECFDF5; }
-.sky-circle { background: #F0F9FF; }
-.amber-circle { background: #FFFBEB; }
-.purple-circle { background: #F5F3FF; }
-.teal-circle { background: #F0FDFA; }
+.green-circle {
+  background: #ECFDF5;
+}
 
-.text-emerald { color: var(--emerald); }
-.text-sky { color: var(--sky); }
-.text-amber { color: var(--amber); }
-.text-purple { color: var(--purple); }
-.text-teal { color: var(--teal); }
+.sky-circle {
+  background: #F0F9FF;
+}
+
+.amber-circle {
+  background: #FFFBEB;
+}
+
+.purple-circle {
+  background: #F5F3FF;
+}
+
+.teal-circle {
+  background: #F0FDFA;
+}
+
+.text-emerald {
+  color: var(--emerald);
+}
+
+.text-sky {
+  color: var(--sky);
+}
+
+.text-amber {
+  color: var(--amber);
+}
+
+.text-purple {
+  color: var(--purple);
+}
+
+.text-teal {
+  color: var(--teal);
+}
 
 .metric-label {
   font-size: 13px;
@@ -1125,7 +1280,9 @@ body.dark-mode .ig-notif-desc {
   font-weight: 500;
 }
 
-.ring-text-side, .gauge-text-side, .water-info-side {
+.ring-text-side,
+.gauge-text-side,
+.water-info-side {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1304,11 +1461,16 @@ body.dark-mode .ig-notif-desc {
   transition: stroke-dashoffset 0.5s ease;
 }
 
-.teal-stroke { stroke: var(--teal); }
+.teal-stroke {
+  stroke: var(--teal);
+}
 
 .ring-text-center {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1396,13 +1558,23 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes oceanWaveFront {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100px); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100px);
+  }
 }
 
 @keyframes oceanWaveBack {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100px); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100px);
+  }
 }
 
 /* Card 2 & 4: Circular Ring Progress Pulse Animations */
@@ -1417,18 +1589,45 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes pulseBorderSky {
-  0%, 100% { border-color: #E2E8F0; border-top-color: var(--sky); box-shadow: 0 0 5px rgba(56, 189, 248, 0.2); }
-  50% { border-color: #CBD5E1; border-top-color: #0284C7; box-shadow: 0 0 16px rgba(56, 189, 248, 0.6); }
+
+  0%,
+  100% {
+    border-color: #E2E8F0;
+    border-top-color: var(--sky);
+    box-shadow: 0 0 5px rgba(56, 189, 248, 0.2);
+  }
+
+  50% {
+    border-color: #CBD5E1;
+    border-top-color: #0284C7;
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.6);
+  }
 }
 
 @keyframes pulseBorderPurple {
-  0%, 100% { border-color: var(--purple); border-left-color: #DDD6FE; box-shadow: 0 0 5px rgba(168, 85, 247, 0.2); }
-  50% { border-color: #7E22CE; border-left-color: #C4B5FD; box-shadow: 0 0 16px rgba(168, 85, 247, 0.6); }
+
+  0%,
+  100% {
+    border-color: var(--purple);
+    border-left-color: #DDD6FE;
+    box-shadow: 0 0 5px rgba(168, 85, 247, 0.2);
+  }
+
+  50% {
+    border-color: #7E22CE;
+    border-left-color: #C4B5FD;
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+  }
 }
 
 @keyframes rotateSmallRing {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(18deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(18deg);
+  }
 }
 
 /* Card 3: Equalizer Bar Bouncing Animation for Suhu Udara */
@@ -1438,17 +1637,45 @@ body.dark-mode .ig-notif-desc {
   transition: height 0.4s ease, background-color 0.3s ease;
 }
 
-.bar-col:nth-child(1) { animation-delay: 0.1s; }
-.bar-col:nth-child(2) { animation-delay: 0.35s; }
-.bar-col:nth-child(3) { animation-delay: 0.5s; }
-.bar-col:nth-child(4) { animation-delay: 0.2s; }
-.bar-col:nth-child(5) { animation-delay: 0.4s; }
-.bar-col:nth-child(6) { animation-delay: 0.6s; }
-.bar-col:nth-child(7) { animation-delay: 0.15s; }
+.bar-col:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.bar-col:nth-child(2) {
+  animation-delay: 0.35s;
+}
+
+.bar-col:nth-child(3) {
+  animation-delay: 0.5s;
+}
+
+.bar-col:nth-child(4) {
+  animation-delay: 0.2s;
+}
+
+.bar-col:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.bar-col:nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+.bar-col:nth-child(7) {
+  animation-delay: 0.15s;
+}
 
 @keyframes barEqualizer {
-  0% { transform: scaleY(0.85); opacity: 0.85; }
-  100% { transform: scaleY(1.14); opacity: 1; filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5)); }
+  0% {
+    transform: scaleY(0.85);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scaleY(1.14);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.5));
+  }
 }
 
 /* Card 5: Liquid Ring Pulse & SVG Wave Glow for Level Air */
@@ -1461,23 +1688,49 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes waterRingGlow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(20, 184, 166, 0.3)); }
-  50% { filter: drop-shadow(0 0 12px rgba(20, 184, 166, 0.7)); }
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 3px rgba(20, 184, 166, 0.3));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 12px rgba(20, 184, 166, 0.7));
+  }
 }
 
 @keyframes ringFillPulse {
-  0% { stroke-width: 8; }
-  100% { stroke-width: 9.5; }
+  0% {
+    stroke-width: 8;
+  }
+
+  100% {
+    stroke-width: 9.5;
+  }
 }
 
 @keyframes iconPulseGlow {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.06);
+  }
 }
 
 @keyframes floatSubtle {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 /* ================= CRITICAL RED THRESHOLD STYLES (NUMBERS ONLY) ================= */
@@ -1494,8 +1747,17 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes warningBlink {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.15); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.15);
+  }
 }
 
 /* ================= MONITORING TAB (CHARTS - SCREENSHOT MATCH) ================= */
@@ -1562,10 +1824,25 @@ body.dark-mode .ig-notif-desc {
   letter-spacing: 0.5px;
 }
 
-.badge-blue { background: #EFF6FF; color: var(--primary); }
-.badge-green { background: #ECFDF5; color: var(--emerald); }
-.badge-cyan { background: #F0FDFA; color: var(--teal); }
-.badge-orange { background: #FFFBEB; color: var(--amber); }
+.badge-blue {
+  background: #EFF6FF;
+  color: var(--primary);
+}
+
+.badge-green {
+  background: #ECFDF5;
+  color: var(--emerald);
+}
+
+.badge-cyan {
+  background: #F0FDFA;
+  color: var(--teal);
+}
+
+.badge-orange {
+  background: #FFFBEB;
+  color: var(--amber);
+}
 
 .chart-canvas-wrapper {
   height: 210px;
@@ -1675,17 +1952,57 @@ body.dark-mode .ig-notif-desc {
 }
 
 /* CUSTOM INNER BOX COLOR & GLOW THEMES WHEN ACTIVE */
-#card-relay-1.active-anim .relay-name-box { background: #FFFBEB; border-color: #FDE68A; box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.15); }
-#card-relay-2.active-anim .relay-name-box { background: #EFF6FF; border-color: #BFDBFE; box-shadow: inset 0 0 10px rgba(37, 99, 235, 0.15); }
-#card-relay-3.active-anim .relay-name-box { background: #ECFDF5; border-color: #A7F3D0; box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.15); }
-#card-relay-4.active-anim .relay-name-box { background: #ECFEFF; border-color: #A5F3FC; box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.15); }
-#card-relay-5.active-anim .relay-name-box { background: #F0F9FF; border-color: #BAE6FD; box-shadow: inset 0 0 10px rgba(14, 165, 233, 0.15); }
-#card-relay-6.active-anim .relay-name-box { background: #FEFCE8; border-color: #FEF08A; box-shadow: inset 0 0 10px rgba(234, 179, 8, 0.15); }
+#card-relay-1.active-anim .relay-name-box {
+  background: #FFFBEB;
+  border-color: #FDE68A;
+  box-shadow: inset 0 0 10px rgba(245, 158, 11, 0.15);
+}
+
+#card-relay-2.active-anim .relay-name-box {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  box-shadow: inset 0 0 10px rgba(37, 99, 235, 0.15);
+}
+
+#card-relay-3.active-anim .relay-name-box {
+  background: #ECFDF5;
+  border-color: #A7F3D0;
+  box-shadow: inset 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+#card-relay-4.active-anim .relay-name-box {
+  background: #ECFEFF;
+  border-color: #A5F3FC;
+  box-shadow: inset 0 0 10px rgba(6, 182, 212, 0.15);
+}
+
+#card-relay-5.active-anim .relay-name-box {
+  background: #F0F9FF;
+  border-color: #BAE6FD;
+  box-shadow: inset 0 0 10px rgba(14, 165, 233, 0.15);
+}
+
+#card-relay-6.active-anim .relay-name-box {
+  background: #FEFCE8;
+  border-color: #FEF08A;
+  box-shadow: inset 0 0 10px rgba(234, 179, 8, 0.15);
+}
 
 @keyframes popIconIn {
-  0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-  75% { transform: scale(1.25) rotate(10deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+
+  75% {
+    transform: scale(1.25) rotate(10deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
 }
 
 /* CUSTOM FISH EATING FEED ANIMATION FOR CH 06 */
@@ -1695,15 +2012,36 @@ body.dark-mode .ig-notif-desc {
   overflow: visible;
 }
 
-.pellet-dot.p1 { animation: pelletDropAnim 1.8s infinite linear; }
-.pellet-dot.p2 { animation: pelletDropAnim 1.8s infinite linear 0.6s; }
-.pellet-dot.p3 { animation: pelletDropAnim 1.8s infinite linear 1.2s; }
+.pellet-dot.p1 {
+  animation: pelletDropAnim 1.8s infinite linear;
+}
+
+.pellet-dot.p2 {
+  animation: pelletDropAnim 1.8s infinite linear 0.6s;
+}
+
+.pellet-dot.p3 {
+  animation: pelletDropAnim 1.8s infinite linear 1.2s;
+}
 
 @keyframes pelletDropAnim {
-  0% { transform: translateY(-6px); opacity: 0; }
-  30% { opacity: 1; }
-  85% { opacity: 0.9; }
-  100% { transform: translateY(14px); opacity: 0; }
+  0% {
+    transform: translateY(-6px);
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 1;
+  }
+
+  85% {
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: translateY(14px);
+    opacity: 0;
+  }
 }
 
 .fish-eating-group {
@@ -1712,9 +2050,17 @@ body.dark-mode .ig-notif-desc {
 }
 
 @keyframes fishMouthEat {
-  0% { transform: translate(0, 0) rotate(-3deg); }
-  50% { transform: translate(4px, -2px) rotate(5deg); }
-  100% { transform: translate(8px, 1px) rotate(-2deg); }
+  0% {
+    transform: translate(0, 0) rotate(-3deg);
+  }
+
+  50% {
+    transform: translate(4px, -2px) rotate(5deg);
+  }
+
+  100% {
+    transform: translate(8px, 1px) rotate(-2deg);
+  }
 }
 
 .relay-bottom-row {
@@ -1861,7 +2207,10 @@ body.dark-mode .ig-notif-desc {
 .slider {
   position: absolute;
   cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: #CBD5E1;
   transition: .3s;
   border-radius: 24px;
@@ -1879,11 +2228,11 @@ body.dark-mode .ig-notif-desc {
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked+.slider {
   background-color: var(--primary);
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   transform: translateX(20px);
 }
 
@@ -2059,7 +2408,10 @@ input:checked + .slider:before {
 .ig-notif-overlay {
   display: none;
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
@@ -2427,7 +2779,10 @@ body.dark-mode .ig-notif-time {
 .modal-overlay {
   display: none;
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(8px);
   z-index: 9999;
@@ -2723,8 +3078,15 @@ body.dark-mode .ig-notif-time {
   shrink: 0;
 }
 
-.step-num-blue { background: #EFF6FF; color: var(--primary); }
-.step-num-green { background: #ECFDF5; color: var(--emerald); }
+.step-num-blue {
+  background: #EFF6FF;
+  color: var(--primary);
+}
+
+.step-num-green {
+  background: #ECFDF5;
+  color: var(--emerald);
+}
 
 /* FOOTER ACTIONS */
 .modal-actions-row {
@@ -2924,13 +3286,14 @@ body.dark-mode .ig-notif-time {
     gap: 10px !important;
   }
 
-  .dash-col-right > .metric-card:not(#card-level-air) {
+  .dash-col-right>.metric-card:not(#card-level-air) {
     grid-column: span 1 !important;
     min-width: 0 !important;
     padding: 14px 10px !important;
   }
 
-  .ring-gauge-flex, .gauge-metric-center {
+  .ring-gauge-flex,
+  .gauge-metric-center {
     gap: 8px !important;
   }
 
@@ -2955,7 +3318,7 @@ body.dark-mode .ig-notif-time {
     gap: 10px !important;
   }
 
-  .ecosystem-grid > * {
+  .ecosystem-grid>* {
     min-width: 0 !important;
   }
 
@@ -3070,4 +3433,561 @@ body.dark-mode .ig-notif-time {
     font-weight: 700;
     color: #2563EB;
   }
+}
+
+/* ================= SUHU UDARA AMBIENT CARD (EXACT REFERENCE DESIGN) ================= */
+.air-temp-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px !important;
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+body.dark-mode .air-temp-card {
+  background: #1E293B;
+}
+
+.air-temp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.air-temp-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.air-temp-left-icon {
+  width: 36px;
+  height: 36px;
+  background: #FFF7ED;
+  border: 1px solid #FFEDD5;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F97316;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+body.dark-mode .air-temp-left-icon {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.3);
+  color: #FB923C;
+}
+
+.air-temp-title-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.2;
+}
+
+body.dark-mode .air-temp-title-text {
+  color: #F8FAFC;
+}
+
+/* SVG CIRCLE GAUGE RINGS FOR PPM & %RH (ZERO VIBRATION) */
+.circle-gauge-svg-wrapper {
+  width: 50px;
+  height: 50px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gauge-ring-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.circle-gauge-svg-wrapper .gauge-unit,
+.circle-gauge-svg-wrapper .ring-center-unit {
+  position: absolute;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.circle-gauge-svg-wrapper .gauge-unit {
+  color: var(--text-muted);
+}
+
+.circle-gauge-svg-wrapper .ring-center-unit {
+  color: var(--purple);
+}
+
+.air-temp-weather-badge {
+  width: 38px;
+  height: 38px;
+  background: #FFF7ED;
+  border: 1px solid #FFEDD5;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F97316;
+  font-size: 18px;
+}
+
+body.dark-mode .air-temp-weather-badge {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.3);
+  color: #FB923C;
+}
+
+/* ANIMATED EQUALIZER BAR VISUALIZATION */
+.air-temp-equalizer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  height: 52px;
+  margin: 10px 0 14px 0;
+  padding: 0 4px;
+}
+
+.air-bar {
+  width: 11%;
+  border-radius: 8px;
+  background: #FDBA74;
+  transition: height 0.4s ease, background-color 0.4s ease;
+  animation: airEqualizerPulse 2.4s ease-in-out infinite alternate;
+}
+
+.air-bar.bar-1 {
+  height: 35%;
+  background: #FED7AA;
+  animation-delay: 0.0s;
+}
+
+.air-bar.bar-2 {
+  height: 58%;
+  background: #FDBA74;
+  animation-delay: 0.3s;
+}
+
+.air-bar.bar-3 {
+  height: 90%;
+  background: #EA580C;
+  animation-delay: 0.6s;
+}
+
+.air-bar.bar-4 {
+  height: 72%;
+  background: #FB923C;
+  animation-delay: 0.2s;
+}
+
+.air-bar.bar-5 {
+  height: 48%;
+  background: #FED7AA;
+  animation-delay: 0.5s;
+}
+
+.air-bar.bar-6 {
+  height: 82%;
+  background: #FDBA74;
+  animation-delay: 0.1s;
+}
+
+.air-bar.bar-7 {
+  height: 96%;
+  background: #EA580C;
+  animation-delay: 0.4s;
+}
+
+@keyframes airEqualizerPulse {
+  0% {
+    transform: scaleY(0.85);
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: scaleY(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scaleY(0.92);
+    opacity: 0.9;
+  }
+}
+
+.air-temp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.air-temp-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #EA580C;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+body.dark-mode .air-temp-value {
+  color: #FB923C;
+}
+
+.air-temp-range {
+  font-size: 12px;
+  font-weight: 500;
+  color: #64748B;
+  margin-bottom: 4px;
+}
+
+body.dark-mode .air-temp-range {
+  color: #94A3B8;
+}
+
+.air-temp-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  background: #FFEDD5;
+  color: #C2410C;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+body.dark-mode .air-temp-status-pill {
+  background: rgba(234, 88, 12, 0.2);
+  color: #FDBA74;
+}
+
+.air-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #EA580C;
+  display: inline-block;
+}
+
+/* ================= TDS & KELEMBABAN EXACT REFERENCE DESIGN ================= */
+.tds-card-custom {
+  justify-content: flex-start !important;
+  gap: 8px;
+}
+
+.humidity-card-custom {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between !important;
+  padding: 16px !important;
+}
+
+.humidity-center-visual-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 4px 0;
+}
+
+.val-status-inline-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-purple-pill {
+  background: #F3E8FF;
+  color: #8B5CF6;
+  font-weight: 700;
+}
+
+.card-header-flex-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.card-title-with-outline-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-outline-emerald {
+  color: #10B981;
+  font-size: 14px;
+}
+
+.icon-outline-blue {
+  color: #2563EB;
+  font-size: 14px;
+}
+
+.icon-outline-amber {
+  color: #F97316;
+  font-size: 14px;
+}
+
+.icon-outline-purple {
+  color: #8B5CF6;
+  font-size: 14px;
+}
+
+.icon-outline-teal {
+  color: #14B8A6;
+  font-size: 14px;
+}
+
+.card-title-text-bold {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.2px;
+}
+
+body.dark-mode .card-title-text-bold {
+  color: #F8FAFC;
+}
+
+.card-top-right-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+}
+
+.badge-emerald {
+  background: #ECFDF5;
+  border: 1px solid #D1FAE5;
+  color: #10B981;
+}
+
+.badge-blue {
+  background: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  color: #2563EB;
+}
+
+.badge-amber {
+  background: #FFF7ED;
+  border: 1px solid #FFEDD5;
+  color: #F97316;
+}
+
+.badge-purple {
+  background: #F3E8FF;
+  border: 1px solid #DDD6FE;
+  color: #8B5CF6;
+}
+
+.badge-teal {
+  background: #F0FDFA;
+  border: 1px solid #CCFBF1;
+  color: #14B8A6;
+}
+
+body.dark-mode .badge-emerald {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+body.dark-mode .badge-blue {
+  background: rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+body.dark-mode .badge-amber {
+  background: rgba(249, 115, 22, 0.15);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+body.dark-mode .badge-purple {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+
+body.dark-mode .badge-teal {
+  background: rgba(20, 184, 166, 0.15);
+  border-color: rgba(20, 184, 166, 0.3);
+}
+
+.air-temp-sub-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.gauge-metric-center-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 0px;
+}
+
+.ring-gauge-wrapper-box {
+  width: 66px;
+  height: 66px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.humidity-middle-visual-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  margin: 10px 0 14px 0;
+}
+
+.humidity-ring-box {
+  width: 66px;
+  height: 66px;
+}
+
+.humidity-inner-circle {
+  width: 44px;
+  height: 44px;
+}
+
+.text-purple-val {
+  color: #8B5CF6 !important;
+}
+
+.tds-icon-wrapper-box {
+  width: 66px;
+  height: 66px;
+  border-radius: 18px;
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(14, 165, 233, 0.08);
+}
+
+body.dark-mode .tds-icon-wrapper-box {
+  background: rgba(14, 165, 233, 0.15);
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+.tds-droplets-svg {
+  width: 52px;
+  height: 52px;
+}
+
+.ring-gauge-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.ring-center-white-circle {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.dark-mode .ring-center-white-circle {
+  background: #0F172A;
+}
+
+.gauge-unit-bold {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.text-slate {
+  color: #475569;
+}
+
+body.dark-mode .text-slate {
+  color: #94A3B8;
+}
+
+.text-purple-unit {
+  color: #8B5CF6;
+}
+
+.gauge-info-text-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.metric-number-dark {
+  font-family: 'Inter', sans-serif;
+  font-size: 26px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+body.dark-mode .metric-number-dark {
+  color: #F8FAFC;
+}
+
+.sub-text-gray {
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748B;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+body.dark-mode .sub-text-gray {
+  color: #94A3B8;
+}
+
+.status-warning-amber {
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #D97706;
+  margin-top: 3px;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.status-optimal-purple {
+  font-family: 'Inter', sans-serif;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8B5CF6;
+  margin-top: 3px;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
