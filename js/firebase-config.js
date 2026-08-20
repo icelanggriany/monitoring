@@ -149,6 +149,47 @@ class AquaponicsFirebase {
     return true;
   }
 
+  // Subscribe to pump schedules from Firebase /pump_schedules.json
+  subscribePumpSchedules(callback) {
+    this.onPumpScheduleCallback = callback;
+    this.fetchPumpSchedules();
+    if (!this.pumpSchedTimer) {
+      this.pumpSchedTimer = setInterval(() => this.fetchPumpSchedules(), 4000);
+    }
+  }
+
+  async fetchPumpSchedules() {
+    try {
+      const response = await fetch(`${this.baseUrl}/pump_schedules.json?t=${Date.now()}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && this.onPumpScheduleCallback) {
+          let list = [];
+          if (Array.isArray(data)) list = data.filter(Boolean);
+          else if (typeof data === 'object') list = Object.values(data);
+          this.onPumpScheduleCallback(list);
+        }
+      }
+    } catch (err) {
+      console.warn("[Firebase] Error fetching pump schedules:", err);
+    }
+  }
+
+  async savePumpSchedules(schedules) {
+    try {
+      await fetch(`${this.baseUrl}/pump_schedules.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(schedules)
+      });
+      console.log("[Firebase] Pump schedules saved:", schedules);
+      return true;
+    } catch (err) {
+      console.error("[Firebase] Failed to save pump schedules:", err);
+      return false;
+    }
+  }
+
   // Subscribe to live notifications from Firebase /notifications.json
   subscribeNotifications(callback) {
     this.onNotifUpdateCallback = callback;

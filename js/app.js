@@ -54,6 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCharts();
   initControlRelays();
   initFeedingScheduler();
+  initPumpScheduler();
   initConfigModals();
   initRealtimeDataBinding();
 });
@@ -77,6 +78,7 @@ const state = {
     { time: '08:00', portion: 1 },
     { time: '16:00', portion: 2 }
   ],
+  pumpSchedules: [],
   notifications: [],
   charts: {}
 };
@@ -446,6 +448,15 @@ function initRealtimeDataBinding() {
         if (Array.isArray(list)) {
           state.notifications = list;
           renderNotifications();
+        }
+      });
+    }
+
+    if (window.aquaponicsDB.subscribePumpSchedules) {
+      window.aquaponicsDB.subscribePumpSchedules(list => {
+        if (Array.isArray(list) && list.length > 0) {
+          state.pumpSchedules = list;
+          if (typeof renderPumpSchedules === 'function') renderPumpSchedules();
         }
       });
     }
@@ -1502,6 +1513,7 @@ function initFeedingScheduler() {
     });
   }
 
+  let editingFeedScheduleIndex = -1;
   let currentSchedHour = 7;
   let currentSchedMin = 45;
   let currentSchedPortion = 1;
@@ -1533,12 +1545,17 @@ function initFeedingScheduler() {
 
   const addSchedBtn = document.getElementById('add-schedule-btn');
   const schedModal = document.getElementById('modal-add-schedule');
+  const schedCloseBtn = document.getElementById('modal-sched-close-btn');
   const schedCancelBtn = document.getElementById('modal-sched-cancel-btn');
   const schedSaveBtn = document.getElementById('modal-sched-save-btn');
+  const schedTitle = document.getElementById('modal-sched-title');
 
   if (addSchedBtn) {
     addSchedBtn.addEventListener('click', () => {
       if (schedModal) {
+        editingFeedScheduleIndex = -1;
+        if (schedTitle) schedTitle.innerText = "Tambah Jadwal Pakan";
+        if (schedSaveBtn) schedSaveBtn.innerText = "Simpan Jadwal";
         currentSchedHour = 7;
         currentSchedMin = 45;
         currentSchedPortion = 1;
@@ -1548,11 +1565,32 @@ function initFeedingScheduler() {
     });
   }
 
+  if (schedCloseBtn) {
+    schedCloseBtn.addEventListener('click', () => {
+      if (schedModal) schedModal.classList.remove('active');
+    });
+  }
+
   if (schedCancelBtn) {
     schedCancelBtn.addEventListener('click', () => {
       if (schedModal) schedModal.classList.remove('active');
     });
   }
+
+  window.editSchedule = function (index) {
+    if (!state.schedules || !state.schedules[index]) return;
+    editingFeedScheduleIndex = index;
+    const s = state.schedules[index];
+    const [h, m] = (s.time || "07:45").split(':').map(Number);
+    currentSchedHour = isNaN(h) ? 7 : h;
+    currentSchedMin = isNaN(m) ? 45 : m;
+    currentSchedPortion = s.portion || 1;
+
+    if (schedTitle) schedTitle.innerText = "Edit Jadwal Pakan";
+    if (schedSaveBtn) schedSaveBtn.innerText = "Simpan Perubahan";
+    updateSchedPickerUI();
+    if (schedModal) schedModal.classList.add('active');
+  };
 
   if (schedSaveBtn) {
     schedSaveBtn.addEventListener('click', () => {
@@ -1560,15 +1598,21 @@ function initFeedingScheduler() {
         const timeVal = `${String(currentSchedHour).padStart(2, '0')}:${String(currentSchedMin).padStart(2, '0')}`;
         const portionVal = currentSchedPortion;
 
-        state.schedules.push({ time: timeVal, portion: portionVal, active: true });
+        if (editingFeedScheduleIndex >= 0 && state.schedules[editingFeedScheduleIndex]) {
+          state.schedules[editingFeedScheduleIndex].time = timeVal;
+          state.schedules[editingFeedScheduleIndex].portion = portionVal;
+          addNotification('success', 'Jadwal Diperbarui', `Jadwal pakan diubah ke pukul ${timeVal} (${portionVal} Porsi)`);
+        } else {
+          state.schedules.push({ time: timeVal, portion: portionVal, active: true });
+          addNotification('success', 'Jadwal Ditambahkan', `Pemberian pakan dijadwalkan pukul ${timeVal} (${portionVal} Porsi)`);
+        }
+
         renderSchedules();
         updateFeedingCountdown();
 
         if (window.aquaponicsDB && typeof window.aquaponicsDB.addSchedule === 'function') {
           try { window.aquaponicsDB.addSchedule(timeVal, portionVal); } catch (e) { }
         }
-
-        addNotification('success', 'Jadwal Ditambahkan', `Pemberian pakan dijadwalkan pukul ${timeVal} (${portionVal} Porsi)`);
       } catch (err) {
         console.warn("Error saving schedule:", err);
       } finally {
@@ -1605,19 +1649,35 @@ function initFeedingScheduler() {
 
   renderSchedules();
 }
+
 function renderSchedules() {
   const listContainer = document.getElementById('schedule-items-list');
   if (!listContainer) return;
 
+  if (!state.schedules || state.schedules.length === 0) {
+    listContainer.innerHTML = `
+      <div class="pump-sched-empty">
+        <i class="fa-regular fa-clock" style="font-size: 22px; margin-bottom: 6px; display: block; opacity: 0.5;"></i>
+        Belum ada jadwal pakan ikan. Klik <b>+ Tambah Jadwal</b> untuk mengatur jam pakan.
+      </div>
+    `;
+    return;
+  }
+
   listContainer.innerHTML = state.schedules.map((s, idx) => `
     <div class="schedule-item">
       <div class="sched-left">
-        <i class="fa-regular fa-clock"></i>
+        <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
         <span class="sched-time">${s.time}</span>
       </div>
       <div class="sched-right">
         <span class="sched-portion">${s.portion} Porsi</span>
-        <button class="sched-delete-btn" onclick="deleteSchedule(${idx})">Hapus</button>
+        <button class="sched-edit-btn" onclick="editSchedule(${idx})" title="Edit Jadwal">
+          <i class="fa-solid fa-pen-to-square"></i> Edit
+        </button>
+        <button class="sched-delete-btn" onclick="deleteSchedule(${idx})" title="Hapus Jadwal">
+          <i class="fa-solid fa-trash"></i> Hapus
+        </button>
       </div>
     </div>
   `).join('');
@@ -1628,6 +1688,219 @@ window.deleteSchedule = function (index) {
   renderSchedules();
   updateFeedingCountdown();
 };
+
+/* ================= 7B. DAILY PUMP SCHEDULER ENGINE (CH 2 & CH 3) ================= */
+let editingPumpScheduleIndex = -1;
+
+function initPumpScheduler() {
+  const addBtn = document.getElementById('add-pump-sched-btn');
+  const modal = document.getElementById('modal-add-pump-schedule');
+  const closeBtn = document.getElementById('modal-pump-close-btn');
+  const cancelBtn = document.getElementById('modal-pump-cancel-btn');
+  const saveBtn = document.getElementById('modal-pump-save-btn');
+  const modalTitle = document.getElementById('modal-pump-title');
+
+  if (addBtn && modal) {
+    addBtn.addEventListener('click', () => {
+      editingPumpScheduleIndex = -1;
+      if (modalTitle) modalTitle.innerText = "Tambah Jadwal Pompa";
+      if (saveBtn) saveBtn.innerText = "Simpan Jadwal";
+      const targetSelect = document.getElementById('pump-sched-target');
+      const startInput = document.getElementById('pump-sched-start');
+      const endInput = document.getElementById('pump-sched-end');
+      if (targetSelect) targetSelect.value = "2";
+      if (startInput) startInput.value = "07:00";
+      if (endInput) endInput.value = "17:00";
+      modal.classList.add('active');
+    });
+  }
+
+  if (closeBtn && modal) {
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+  }
+
+  if (cancelBtn && modal) {
+    cancelBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+  }
+
+  window.editPumpSchedule = function (index) {
+    if (!state.pumpSchedules || !state.pumpSchedules[index]) return;
+    editingPumpScheduleIndex = index;
+    const s = state.pumpSchedules[index];
+    const targetSelect = document.getElementById('pump-sched-target');
+    const startInput = document.getElementById('pump-sched-start');
+    const endInput = document.getElementById('pump-sched-end');
+
+    if (targetSelect) targetSelect.value = String(s.channel || 2);
+    if (startInput) startInput.value = s.start || "07:00";
+    if (endInput) endInput.value = s.end || "17:00";
+
+    if (modalTitle) modalTitle.innerText = "Edit Jadwal Pompa";
+    if (saveBtn) saveBtn.innerText = "Simpan Perubahan";
+    if (modal) modal.classList.add('active');
+  };
+
+  if (saveBtn && modal) {
+    saveBtn.addEventListener('click', () => {
+      const targetSelect = document.getElementById('pump-sched-target');
+      const startInput = document.getElementById('pump-sched-start');
+      const endInput = document.getElementById('pump-sched-end');
+
+      const ch = parseInt(targetSelect ? targetSelect.value : 2);
+      const name = ch === 2 ? "Pompa Pembesaran" : "Pompa Peremajaan";
+      const startVal = startInput ? startInput.value : "07:00";
+      const endVal = endInput ? endInput.value : "17:00";
+
+      if (!state.pumpSchedules) state.pumpSchedules = [];
+
+      if (editingPumpScheduleIndex >= 0 && state.pumpSchedules[editingPumpScheduleIndex]) {
+        state.pumpSchedules[editingPumpScheduleIndex].channel = ch;
+        state.pumpSchedules[editingPumpScheduleIndex].name = name;
+        state.pumpSchedules[editingPumpScheduleIndex].start = startVal;
+        state.pumpSchedules[editingPumpScheduleIndex].end = endVal;
+        addNotification('success', 'Jadwal Pompa Diperbarui', `${name} dijadwalkan: Nyala ${startVal} - Mati ${endVal}`);
+      } else {
+        state.pumpSchedules.push({
+          channel: ch,
+          name: name,
+          start: startVal,
+          end: endVal,
+          active: true
+        });
+        addNotification('success', 'Jadwal Pompa Ditambahkan', `${name} dijadwalkan: Nyala ${startVal} - Mati ${endVal}`);
+      }
+
+      renderPumpSchedules();
+      savePumpSchedulesToDB();
+      if (modal) modal.classList.remove('active');
+      evaluatePumpSchedules();
+    });
+  }
+
+  renderPumpSchedules();
+  evaluatePumpSchedules();
+  setInterval(evaluatePumpSchedules, 5000);
+}
+
+function savePumpSchedulesToDB() {
+  if (window.aquaponicsDB && typeof window.aquaponicsDB.savePumpSchedules === 'function') {
+    window.aquaponicsDB.savePumpSchedules(state.pumpSchedules);
+  }
+}
+
+function isCurrentTimeInSchedule(startStr, endStr) {
+  if (!startStr || !endStr) return false;
+  const now = new Date();
+  const currMin = now.getHours() * 60 + now.getMinutes();
+
+  const [sH, sM] = startStr.split(':').map(Number);
+  const [eH, eM] = endStr.split(':').map(Number);
+
+  const startMin = sH * 60 + (sM || 0);
+  const endMin = eH * 60 + (eM || 0);
+
+  if (startMin <= endMin) {
+    return currMin >= startMin && currMin < endMin;
+  } else {
+    // Range crossing midnight (e.g. 20:00 - 05:00)
+    return currMin >= startMin || currMin < endMin;
+  }
+}
+
+function renderPumpSchedules() {
+  const container = document.getElementById('pump-schedule-list');
+  if (!container) return;
+
+  if (!state.pumpSchedules || state.pumpSchedules.length === 0) {
+    container.innerHTML = `
+      <div class="pump-sched-empty">
+        <i class="fa-regular fa-clock" style="font-size: 22px; margin-bottom: 6px; display: block; opacity: 0.5;"></i>
+        Belum ada jadwal harian pompa. Klik <b>+ Tambah Jadwal</b> untuk mengatur jam nyala &amp; mati.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = state.pumpSchedules.map((s, idx) => {
+    const isRunning = s.active && isCurrentTimeInSchedule(s.start, s.end);
+    const badgeClass = s.channel === 2 ? 'pump-badge-blue' : 'pump-badge-emerald';
+
+    return `
+      <div class="pump-sched-item">
+        <div class="pump-sched-info">
+          <div class="pump-sched-title-row">
+            <span class="pump-badge ${badgeClass}"><i class="fa-solid fa-bolt"></i> ${s.name} (CH ${s.channel < 10 ? '0' + s.channel : s.channel})</span>
+            ${s.active ? (isRunning 
+              ? `<span class="pump-sched-status-tag tag-running"><i class="fa-solid fa-circle dot-running" style="font-size: 8px; color: #10B981;"></i> Sedang Berjalan (ON)</span>` 
+              : `<span class="pump-sched-status-tag tag-waiting"><i class="fa-regular fa-clock" style="font-size: 10px;"></i> Menunggu Jadwal</span>`) 
+              : `<span class="pump-sched-status-tag" style="background:#FEE2E2; color:#DC2626;"><i class="fa-solid fa-pause"></i> Nonaktif</span>`
+            }
+          </div>
+          <div class="pump-sched-time-row">
+            <i class="fa-regular fa-clock" style="color: var(--text-muted);"></i>
+            <span class="time-on"><b>${s.start}</b> (ON)</span>
+            <span class="time-arrow">&rarr;</span>
+            <span class="time-off"><b>${s.end}</b> (OFF)</span>
+          </div>
+        </div>
+        <div class="pump-sched-actions">
+          <button class="sched-edit-btn" onclick="editPumpSchedule(${idx})" title="Edit Jadwal">
+            <i class="fa-solid fa-pen-to-square"></i> Edit
+          </button>
+          <button class="sched-delete-btn" onclick="deletePumpSchedule(${idx})" title="Hapus Jadwal">
+            <i class="fa-solid fa-trash"></i> Hapus
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+window.deletePumpSchedule = function (index) {
+  if (state.pumpSchedules && state.pumpSchedules[index]) {
+    const deleted = state.pumpSchedules.splice(index, 1)[0];
+    renderPumpSchedules();
+    savePumpSchedulesToDB();
+    addNotification('info', 'Jadwal Dihapus', `Jadwal ${deleted.name} telah dihapus.`);
+  }
+};
+
+let lastPumpScheduleState = {};
+
+function evaluatePumpSchedules() {
+  if (!state.pumpSchedules || !Array.isArray(state.pumpSchedules)) return;
+
+  state.pumpSchedules.forEach(sched => {
+    if (!sched.active) return;
+
+    const shouldRun = isCurrentTimeInSchedule(sched.start, sched.end);
+    const chIdx = sched.channel - 1;
+    const currentState = state.relays[chIdx] || 0;
+    const stateKey = `sched_ch_${sched.channel}`;
+
+    if (shouldRun && currentState === 0 && lastPumpScheduleState[stateKey] !== 'RUNNING') {
+      lastPumpScheduleState[stateKey] = 'RUNNING';
+      console.log(`[Pump Scheduler] Turning ON CH ${sched.channel} (${sched.name}) per schedule (${sched.start} - ${sched.end})`);
+      if (window.aquaponicsDB && typeof window.aquaponicsDB.updateRelayState === 'function') {
+        window.aquaponicsDB.updateRelayState(sched.channel, 1);
+        state.relays[chIdx] = 1;
+        if (typeof syncRelayUI === 'function') syncRelayUI();
+      }
+    } else if (!shouldRun && currentState === 1 && lastPumpScheduleState[stateKey] === 'RUNNING') {
+      lastPumpScheduleState[stateKey] = 'STOPPED';
+      console.log(`[Pump Scheduler] Turning OFF CH ${sched.channel} (${sched.name}) per schedule (${sched.start} - ${sched.end})`);
+      if (window.aquaponicsDB && typeof window.aquaponicsDB.updateRelayState === 'function') {
+        window.aquaponicsDB.updateRelayState(sched.channel, 0);
+        state.relays[chIdx] = 0;
+        if (typeof syncRelayUI === 'function') syncRelayUI();
+      }
+    }
+  });
+}
 
 /* ================= 8. CONFIG MODAL POPUPS ================= */
 /* ================= 8. CONFIG MODAL POPUPS (EXACT MATCH REFERENCE) ================= */
