@@ -64,12 +64,12 @@ const state = {
   activeTab: 'tab-beranda',
   activePeriod: 'harian',
   telemetry: {
-    suhu_air: 26.3,
-    tds: 350,
-    suhu_udara: 27.1,
-    kelembaban: 84,
-    level_air: 68.5,
-    voltase_aki: 12.4,
+    suhu_air: 0.0,
+    tds: 0,
+    suhu_udara: 0.0,
+    kelembaban: 0,
+    level_air: 0.0,
+    voltase_aki: 0.0,
     status_daya: 'Aki 12V',
     status_gateway: 'Aktif'
   },
@@ -421,13 +421,24 @@ function initRealtimeDataBinding() {
       if (data) {
         let updated = false;
         if (data.suhu_air !== undefined) { state.telemetry.suhu_air = parseFloat(data.suhu_air); updated = true; }
+        else if (data.temp_w !== undefined) { state.telemetry.suhu_air = parseFloat(data.temp_w); updated = true; }
+
         if (data.tds !== undefined) { state.telemetry.tds = parseFloat(data.tds); updated = true; }
+
         if (data.suhu_udara !== undefined) { state.telemetry.suhu_udara = parseFloat(data.suhu_udara); updated = true; }
+        else if (data.temp_a !== undefined) { state.telemetry.suhu_udara = parseFloat(data.temp_a); updated = true; }
+
         if (data.kelembaban !== undefined) { state.telemetry.kelembaban = parseFloat(data.kelembaban); updated = true; }
+        else if (data.hum !== undefined) { state.telemetry.kelembaban = parseFloat(data.hum); updated = true; }
+
         if (data.level_air !== undefined) { state.telemetry.level_air = parseFloat(data.level_air); updated = true; }
+        else if (data.water_level !== undefined) { state.telemetry.level_air = parseFloat(data.water_level); updated = true; }
+
         if (data.voltase_aki !== undefined) { state.telemetry.voltase_aki = parseFloat(data.voltase_aki); updated = true; }
-        if (data.v_bat !== undefined) { state.telemetry.voltase_aki = parseFloat(data.v_bat); updated = true; }
+        else if (data.v_bat !== undefined) { state.telemetry.voltase_aki = parseFloat(data.v_bat); updated = true; }
+
         if (data.status_daya !== undefined) { state.telemetry.status_daya = data.status_daya; updated = true; }
+        else if (data.lamp !== undefined) { state.telemetry.status_daya = (data.lamp == 1 ? "Panel Surya" : "Aki 12V"); updated = true; }
 
         if (data.relays && Array.isArray(data.relays)) {
           if (!state.lastRelayToggleTime || (Date.now() - state.lastRelayToggleTime > 15000)) {
@@ -469,10 +480,11 @@ function pushRealtimeChartData(data) {
   const charts = state.charts;
   if (!charts) return;
 
-  if (data.suhu_air !== undefined && charts.suhuAir) {
+  const suhuAirVal = data.suhu_air !== undefined ? parseFloat(data.suhu_air) : (data.temp_w !== undefined ? parseFloat(data.temp_w) : undefined);
+  if (suhuAirVal !== undefined && charts.suhuAir) {
     const d = charts.suhuAir.data.datasets[0].data;
     if (d && d.length > 0) {
-      d[d.length - 1] = parseFloat(data.suhu_air);
+      d[d.length - 1] = suhuAirVal;
       charts.suhuAir.update('none');
     }
   }
@@ -485,18 +497,20 @@ function pushRealtimeChartData(data) {
     }
   }
 
-  if (data.level_air !== undefined && charts.levelAir) {
+  const levelAirVal = data.level_air !== undefined ? parseFloat(data.level_air) : (data.water_level !== undefined ? parseFloat(data.water_level) : undefined);
+  if (levelAirVal !== undefined && charts.levelAir) {
     const d = charts.levelAir.data.datasets[0].data;
     if (d && d.length > 0) {
-      d[d.length - 1] = parseFloat(data.level_air);
+      d[d.length - 1] = levelAirVal;
       charts.levelAir.update('none');
     }
   }
 
-  if (data.suhu_udara !== undefined && charts.suhuUdara) {
+  const suhuUdaraVal = data.suhu_udara !== undefined ? parseFloat(data.suhu_udara) : (data.temp_a !== undefined ? parseFloat(data.temp_a) : undefined);
+  if (suhuUdaraVal !== undefined && charts.suhuUdara) {
     const d = charts.suhuUdara.data.datasets[0].data;
     if (d && d.length > 0) {
-      d[d.length - 1] = parseFloat(data.suhu_udara);
+      d[d.length - 1] = suhuUdaraVal;
       charts.suhuUdara.update('none');
     }
   }
@@ -755,10 +769,10 @@ function updateUI() {
   }
 
   // 5. Voltase Aki & Status Daya (Auto Cut-Off 11.7V & Switching Panel Surya)
-  const vAki = (state.telemetry.voltase_aki !== undefined) ? state.telemetry.voltase_aki : 12.4;
+  const vAki = (state.telemetry.voltase_aki !== undefined) ? state.telemetry.voltase_aki : 0.0;
   const elVoltase = document.getElementById('val-voltase-aki');
   const pillDaya = document.getElementById('pill-status-daya');
-  const isVoltageLow = (vAki <= 11.7 && vAki > 5.0);
+  const isVoltageLow = (vAki <= 11.7 && vAki >= 9.5);
 
   if (elVoltase) {
     elVoltase.innerHTML = `${vAki.toFixed(1)} V`;
@@ -770,9 +784,9 @@ function updateUI() {
   }
 
   if (pillDaya) {
-    if (isVoltageLow || state.relays[0] === 1 || state.telemetry.status_daya === 'Panel Surya') {
+    if (state.relays[0] === 1 || isVoltageLow) {
       pillDaya.className = 'power-pill status-power-solar';
-      pillDaya.innerHTML = '☀️ Panel Surya (Cut-off Aktif)';
+      pillDaya.innerHTML = '☀️ Panel Surya (Aktif)';
     } else {
       pillDaya.className = 'power-pill status-power-normal';
       pillDaya.innerHTML = '🔋 Aki 12V (Normal)';
@@ -821,7 +835,9 @@ function updateEcosystemStatus() {
   }
 
   const fishYOffset = Math.round((waterY - 50) * 0.7);
-  const isFishCritical = levelAir < 30.0 || suhuAir < 20.0 || suhuAir > 34.0;
+  const isWaterLow = levelAir < 30.0;
+  const isTempCritical = suhuAir > 0.0 && (suhuAir < 20.0 || suhuAir > 34.0);
+  const isFishCritical = isWaterLow || isTempCritical;
 
   if (isFishCritical) {
     if (ecoFishBody) ecoFishBody.setAttribute('fill', '#EF4444');
@@ -831,7 +847,11 @@ function updateEcosystemStatus() {
     if (ecoBubblesGroup) ecoBubblesGroup.style.display = 'none';
     if (ecoFishPill) {
       ecoFishPill.className = 'eco-status-pill red-pill';
-      ecoFishPill.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Air Kritis (${levelAir.toFixed(1)}%): Air Dangkal!</span>`;
+      if (isWaterLow) {
+        ecoFishPill.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Air Kritis (${levelAir.toFixed(1)}%): Air Dangkal!</span>`;
+      } else {
+        ecoFishPill.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i><span>Suhu Air (${suhuAir.toFixed(1)}&deg;C): Kritis!</span>`;
+      }
     }
   } else {
     if (ecoFishBody) ecoFishBody.setAttribute('fill', '#5E6C7D');
@@ -1031,10 +1051,10 @@ function initCharts() {
     }
   };
 
-  const currentSuhuAir = state.telemetry.suhu_air || 26.3;
+  const currentSuhuAir = state.telemetry.suhu_air || 0.0;
   const currentTds = Math.round(state.telemetry.tds) || 0;
-  const currentLevel = state.telemetry.level_air || 68.5;
-  const currentSuhuUdara = state.telemetry.suhu_udara || 27.1;
+  const currentLevel = state.telemetry.level_air || 0.0;
+  const currentSuhuUdara = state.telemetry.suhu_udara || 0.0;
 
   // 1. Chart Suhu Air Kolam (°C)
   const elSuhuAir = document.getElementById('chart-suhu-air');
@@ -1273,10 +1293,10 @@ function updateChartsData() {
 
   let suhuAirData, tdsData, levelAirData, suhuUdaraData;
 
-  const currentSuhuAir = state.telemetry.suhu_air || 26.3;
+  const currentSuhuAir = state.telemetry.suhu_air || 0.0;
   const currentTds = Math.round(state.telemetry.tds) || 0;
-  const currentLevel = state.telemetry.level_air || 68.5;
-  const currentSuhuUdara = state.telemetry.suhu_udara || 27.1;
+  const currentLevel = state.telemetry.level_air || 0.0;
+  const currentSuhuUdara = state.telemetry.suhu_udara || 0.0;
 
   if (period === 'harian' || period === 'daily') {
     suhuAirData = [25.8, 25.6, 25.5, 26.0, 26.8, 27.2, 26.9, 26.5, currentSuhuAir];
@@ -1400,6 +1420,7 @@ function toggleRelayChannel(channel) {
       // If currently ON, turn OFF immediately
       if (window.feederTimerRef) clearTimeout(window.feederTimerRef);
       state.relays[5] = 0;
+      state.lastRelayToggleTime = Date.now();
       syncRelayUI();
       if (window.aquaponicsDB) window.aquaponicsDB.updateRelayState(6, 0);
       return;
@@ -1416,10 +1437,16 @@ function toggleRelayChannel(channel) {
     }
   }
 
-  state.lastRelayToggleTime = Date.now();
-  const currentVal = state.relays[channel - 1] || 0;
+  // Tentukan status saat ini: Jika state 1 atau tombol bertuliskan MATIKAN -> Ubah ke 0 (OFF)
+  const btnEl = document.getElementById(`btn-relay-${channel}`);
+  let currentVal = state.relays[channel - 1] || 0;
+  if (btnEl && (btnEl.innerText.includes('MATIKAN') || btnEl.classList.contains('btn-relay-on-blue'))) {
+    currentVal = 1;
+  }
+  
   const newVal = currentVal === 1 ? 0 : 1;
   state.relays[channel - 1] = newVal;
+  state.lastRelayToggleTime = Date.now();
 
   syncRelayUI();
 
@@ -1673,10 +1700,10 @@ function renderSchedules() {
       <div class="sched-right">
         <span class="sched-portion">${s.portion} Porsi</span>
         <button class="sched-edit-btn" onclick="editSchedule(${idx})" title="Edit Jadwal">
-          <i class="fa-solid fa-pen-to-square"></i> Edit
+          <i class="fa-solid fa-pen-to-square"></i>
         </button>
         <button class="sched-delete-btn" onclick="deleteSchedule(${idx})" title="Hapus Jadwal">
-          <i class="fa-solid fa-trash"></i> Hapus
+          <i class="fa-solid fa-trash"></i>
         </button>
       </div>
     </div>
@@ -1849,10 +1876,10 @@ function renderPumpSchedules() {
         </div>
         <div class="pump-sched-actions">
           <button class="sched-edit-btn" onclick="editPumpSchedule(${idx})" title="Edit Jadwal">
-            <i class="fa-solid fa-pen-to-square"></i> Edit
+            <i class="fa-solid fa-pen-to-square"></i>
           </button>
           <button class="sched-delete-btn" onclick="deletePumpSchedule(${idx})" title="Hapus Jadwal">
-            <i class="fa-solid fa-trash"></i> Hapus
+            <i class="fa-solid fa-trash"></i>
           </button>
         </div>
       </div>

@@ -1,18 +1,11 @@
-/**
- * FIREBASE REALTIME DATABASE INTEGRATION MODULE
- * Direct REST API polling & WebSocket synchronization for Aquaponics IoT Gateway
- */
-
 const FIREBASE_CONFIG = {
-  databaseURL: "https://aquaponics-lora-default-rtdb.asia-southeast1.firebasedatabase.app",
-  esp32IP: "10.228.237.21"
+  databaseURL: "https://aquaponics-lora-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 class AquaponicsFirebase {
   constructor() {
     this.baseUrl = FIREBASE_CONFIG.databaseURL;
-    this.esp32IP = FIREBASE_CONFIG.esp32IP;
-    this.pollInterval = 2000; // Poll every 2 seconds for real-time responsiveness
+    this.pollInterval = 1500;
     this.onSensorUpdateCallback = null;
     this.onStatusUpdateCallback = null;
     this.timer = null;
@@ -22,35 +15,24 @@ class AquaponicsFirebase {
   subscribeTelemetry(callback) {
     this.onSensorUpdateCallback = callback;
     this.fetchTelemetry();
-    
     if (!this.timer) {
       this.timer = setInterval(() => this.fetchTelemetry(), this.pollInterval);
     }
   }
 
-  // Fetch telemetry REST endpoint from Firebase RTDB (/telemetry.json)
+  // Fetch telemetry REST endpoint from Firebase RTDB (/sensor_data.json)
   async fetchTelemetry() {
     try {
-      // 1. Try primary endpoint /telemetry.json (Posted by physical ESP32)
-      let response = await fetch(`${this.baseUrl}/telemetry.json?t=${Date.now()}`);
+      let response = await fetch(`${this.baseUrl}/sensor_data.json?t=${Date.now()}`);
       if (response.ok) {
         const data = await response.json();
-        if (data && this.onSensorUpdateCallback) {
+        if (data && typeof data === 'object' && this.onSensorUpdateCallback) {
           this.onSensorUpdateCallback(data);
           return;
         }
       }
-
-      // 2. Fallback to /sensor_data.json
-      response = await fetch(`${this.baseUrl}/sensor_data.json?t=${Date.now()}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data && this.onSensorUpdateCallback) {
-          this.onSensorUpdateCallback(data);
-        }
-      }
     } catch (err) {
-      console.warn("[Firebase] Network error fetching realtime telemetry:", err);
+      // Polling network fallback
     }
   }
 
@@ -63,11 +45,11 @@ class AquaponicsFirebase {
         body: JSON.stringify(commandPayload)
       });
       if (response.ok) {
-        console.log("[Firebase] Command dispatched successfully:", commandPayload);
+        console.log("[Firebase REST] Perintah berhasil dikirim:", commandPayload);
         return true;
       }
     } catch (err) {
-      console.error("[Firebase Error] Failed to send command:", err);
+      console.error("[Firebase Error] Gagal mengirim perintah:", err);
     }
     return false;
   }
@@ -86,26 +68,37 @@ class AquaponicsFirebase {
     const stVal = parseInt(state);
     const rKey = relayKeys[chIdx] || `ch${chNum}`;
 
-    // 1. Direct Local HTTP Ping to ESP32 Node (Bypasses Chrome CORS blocks, 0-ms Latency!)
-    if (this.esp32IP) {
-      const pingUrl = `http://${this.esp32IP}/api/relay?ch=${chNum}&state=${stVal}&t=${Date.now()}`;
-      const imgPing = new Image();
-      imgPing.src = pingUrl;
-      console.log(`[Direct HTTP Ping Sent]: ${pingUrl}`);
-    }
-
-    // 2. Sync relay path in Firebase (/relay.json)
+    // 1. Sync status relay ke Firebase (/relay dan /sensor_data)
     try {
-      await fetch(`${this.baseUrl}/relay/${rKey}.json`, {
+      fetch(`${this.baseUrl}/relay/${rKey}.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(stVal)
-      });
+      }).catch(() => {});
+
+      fetch(`${this.baseUrl}/sensor_data/relays/${chIdx}.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(stVal)
+      }).catch(() => {});
+
+      if (chIdx === 0) {
+        fetch(`${this.baseUrl}/sensor_data/lamp.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(stVal)
+        }).catch(() => {});
+        fetch(`${this.baseUrl}/sensor_data/status_daya.json`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(stVal === 1 ? "Panel Surya" : "Aki 12V")
+        }).catch(() => {});
+      }
     } catch (err) {
-      console.warn("[Firebase] Couldn't update RTDB /relay.json:", err);
+      console.warn("[Firebase] Couldn't update RTDB:", err);
     }
 
-    // 3. Dispatch command payload for ESP32 Gateway to broadcast via LoRa E220
+    // 2. Dispatch command payload untuk dipancarkan ESP32 Gateway via LoRa E220
     const payload = {
       action: "relay_toggle",
       channel: chNum,
