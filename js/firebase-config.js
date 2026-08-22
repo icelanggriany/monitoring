@@ -36,16 +36,34 @@ class AquaponicsFirebase {
     }
   }
 
-  // Send single relay / feeder command to Firebase /last_command.json
+  // Send single relay / feeder command to Firebase /control_queue/latest.json and /last_command.json
   async sendCommand(commandPayload) {
     try {
-      const response = await fetch(`${this.baseUrl}/last_command.json`, {
+      this.seqCounter = (this.seqCounter || Math.floor(Date.now() % 1000000)) + 1;
+      commandPayload.seq = this.seqCounter;
+      commandPayload.ts = Date.now();
+
+      const jsonStr = JSON.stringify(commandPayload);
+
+      // Prioritas 1: Kirim langsung ke Fast Queue /control_queue/latest.json
+      const reqQueue = fetch(`${this.baseUrl}/control_queue/latest.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(commandPayload)
+        body: jsonStr,
+        keepalive: true
       });
-      if (response.ok) {
-        console.log("[Firebase REST] Perintah berhasil dikirim:", commandPayload);
+
+      // Prioritas 2 (Asynchronous): Fallback Legacy /last_command.json
+      fetch(`${this.baseUrl}/last_command.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: jsonStr,
+        keepalive: true
+      }).catch(() => {});
+
+      const response = await reqQueue;
+      if (response && response.ok) {
+        console.log(`[Firebase FastCMD] Perintah INSTAN berhasil dikirim (Seq: ${commandPayload.seq}):`, commandPayload);
         return true;
       }
     } catch (err) {
@@ -54,9 +72,9 @@ class AquaponicsFirebase {
     return false;
   }
 
-  // Update multi-relay state to Firebase /last_command.json and direct HTTP API
+  // Update multi-relay state to Firebase /control_queue/latest.json and direct HTTP API
   async updateRelayState(channel, state) {
-    const relayKeys = ["ats_solar", "pembesaran", "peremajaan", "sirkulasi", "aerator", "feeder"];
+    const relayKeys = ["ats_solar", "pembesaran", "peremajaan", "aerator", "cadangan", "feeder"];
     let chNum = parseInt(channel);
 
     if (isNaN(chNum)) {
@@ -68,78 +86,129 @@ class AquaponicsFirebase {
     const stVal = parseInt(state);
     const rKey = relayKeys[chIdx] || `ch${chNum}`;
 
-    // 1. Sync status relay ke Firebase (/relay dan /sensor_data)
+    // 1. Dispatch command payload INSTAN ke antrean Firebase
+    const payload = {
+      action: "relay_toggle",
+      channel: chNum,
+      ch: chNum,
+      state: stVal,
+      st: stVal,
+      timestamp: Date.now()
+    };
+    const sendPromise = this.sendCommand(payload);
+
+    // 2. Sync status relay ke Firebase secara non-blocking di background
     try {
       fetch(`${this.baseUrl}/relay/${rKey}.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stVal)
+        body: JSON.stringify(stVal),
+        keepalive: true
       }).catch(() => {});
 
       fetch(`${this.baseUrl}/sensor_data/relays/${chIdx}.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stVal)
+        body: JSON.stringify(stVal),
+        keepalive: true
       }).catch(() => {});
 
-      if (chIdx === 0) {
-        fetch(`${this.baseUrl}/sensor_data/lamp.json`, {
+      const fieldMap = ["lamp", "pump_b", "pump_p", "pump_s", "aerator", "feeder"];
+      const sensorField = fieldMap[chIdx];
+      if (sensorField) {
+        fetch(`${this.baseUrl}/sensor_data/${sensorField}.json`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(stVal)
+          body: JSON.stringify(stVal),
+          keepalive: true
         }).catch(() => {});
+      }
+
+      if (chIdx === 0) {
         fetch(`${this.baseUrl}/sensor_data/status_daya.json`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(stVal === 1 ? "Panel Surya" : "Aki 12V")
+          body: JSON.stringify(stVal === 1 ? "Panel Surya" : "Aki 12V"),
+          keepalive: true
         }).catch(() => {});
       }
     } catch (err) {
       console.warn("[Firebase] Couldn't update RTDB:", err);
     }
 
-    // 2. Dispatch command payload untuk dipancarkan ESP32 Gateway via LoRa E220
-    const payload = {
-      action: "relay_toggle",
-      channel: chNum,
-      state: stVal,
-      timestamp: Date.now()
-    };
-    return await this.sendCommand(payload);
+    return await sendPromise;
   }
 
   // Trigger manual feeding
   async triggerFeeding(portion = 1) {
     const payload = {
       action: "feed",
+      channel: 6,
+      ch: 6,
+      state: 1,
+      st: 1,
       portion: parseInt(portion),
       timestamp: Date.now()
     };
+    try {
+      fetch(`${this.baseUrl}/sensor_data/feeder.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(1)
+      }).catch(() => {});
+      fetch(`${this.baseUrl}/sensor_data/relays/5.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(1)
+      }).catch(() => {});
+      fetch(`${this.baseUrl}/relay/feeder.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(1)
+      }).catch(() => {});
+    } catch (e) {}
     return await this.sendCommand(payload);
   }
 
-  // Add schedule to Firebase /schedules.json
-  async addSchedule(time, portion = 1) {
-    try {
-      const response = await fetch(`${this.baseUrl}/schedules.json`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ time, portion: parseInt(portion), active: true, timestamp: Date.now() })
-      });
-      if (response.ok) {
-        console.log("[Firebase] Feeding schedule added:", time, portion);
-        return true;
-      }
-    } catch (err) {
-      console.warn("[Firebase] Could not save schedule to RTDB:", err);
+  // Subscribe to feeding schedules from Firebase /schedules.json
+  subscribeFeedingSchedules(callback) {
+    this.onFeedingScheduleCallback = callback;
+    this.fetchFeedingSchedules();
+    if (!this.feedingSchedTimer) {
+      this.feedingSchedTimer = setInterval(() => this.fetchFeedingSchedules(), 4000);
     }
-    return true;
   }
 
-  // Delete schedule from Firebase
-  async deleteSchedule(index) {
-    console.log("[Firebase] Schedule removed at index:", index);
-    return true;
+  async fetchFeedingSchedules() {
+    try {
+      const response = await fetch(`${this.baseUrl}/schedules.json?t=${Date.now()}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data && this.onFeedingScheduleCallback) {
+          let list = [];
+          if (Array.isArray(data)) list = data.filter(Boolean);
+          else if (typeof data === 'object') list = Object.values(data);
+          this.onFeedingScheduleCallback(list);
+        }
+      }
+    } catch (err) {
+      console.warn("[Firebase] Error fetching feeding schedules:", err);
+    }
+  }
+
+  async saveFeedingSchedules(schedules) {
+    try {
+      await fetch(`${this.baseUrl}/schedules.json`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(schedules)
+      });
+      console.log("[Firebase] Feeding schedules saved:", schedules);
+      return true;
+    } catch (err) {
+      console.error("[Firebase] Failed to save feeding schedules:", err);
+      return false;
+    }
   }
 
   // Subscribe to pump schedules from Firebase /pump_schedules.json

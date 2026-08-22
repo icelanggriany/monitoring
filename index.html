@@ -310,7 +310,7 @@
                 </div>
               </div>
 
-              <!-- Card 2: TDS Nutrisi Air (EXACT MATCH REFERENCE SCREENSHOT) -->
+              <!-- Card 2: TDS Nutrisi Air (BALANCED SYMMETRIC DESIGN) -->
               <div class="card metric-card tds-card-custom" id="card-tds">
                 <div class="card-header-flex-top">
                   <div class="card-title-with-outline-icon">
@@ -321,28 +321,31 @@
                   </div>
                 </div>
 
-                <div class="gauge-metric-center-row">
-                  <div class="ring-gauge-wrapper-box">
+                <!-- Center Ring Gauge Visual (Padat di Tengah) -->
+                <div class="humidity-center-visual-box">
+                  <div class="ring-gauge-wrapper-box humidity-ring-large-box">
                     <svg viewBox="0 0 64 64" class="ring-gauge-svg">
                       <!-- Soft background track ring -->
-                      <circle cx="32" cy="32" r="24" fill="none" stroke="#E0F2FE" stroke-width="7" />
+                      <circle cx="32" cy="32" r="25" fill="none" stroke="#E0F2FE" stroke-width="7" />
                       <!-- Dynamic progress fill ring -->
-                      <circle id="tds-ring-fill" cx="32" cy="32" r="24" fill="none" stroke="#2563EB" stroke-width="7"
-                        stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"
+                      <circle id="tds-ring-fill" cx="32" cy="32" r="25" fill="none" stroke="#0284C7" stroke-width="7"
+                        stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="157.1"
                         transform="rotate(-90 32 32)"
                         style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease;" />
                     </svg>
-                    <div class="ring-center-white-circle">
+                    <div class="ring-center-white-circle humidity-inner-large-circle">
                       <span class="gauge-unit-bold text-slate">PPM</span>
                     </div>
                   </div>
-                  <div class="gauge-info-text-side">
-                    <div class="metric-number-dark" id="val-tds">0</div>
-                    <div class="sub-text-gray">Target: 400-900</div>
-                    <div class="status-warning-amber" id="status-tds">
-                      ⚠️ Nutrisi Rendah (Air Bersih)
-                    </div>
+                </div>
+
+                <!-- Bottom Metric Body -->
+                <div class="air-temp-body">
+                  <div class="val-status-inline-row">
+                    <span class="metric-number-dark text-sky" id="val-tds">0</span>
+                    <span class="air-temp-status-pill status-amber-pill" id="status-tds">Rendah</span>
                   </div>
+                  <div class="sub-text-gray">Target: 400-900 PPM</div>
                 </div>
               </div>
 
@@ -528,7 +531,7 @@
         <!-- ================= TAB 3: CONTROL ================= -->
         <section class="tab-panel" id="tab-control">
 
-          <!-- 6-Channel Relays Grid (White & Blue Theme - Active HIGH / COM & HIGH) -->
+          <!-- 4 Main Relay Switches Grid (1 Horizontal Row - 4 Columns Full Width) -->
           <div class="relay-cards-grid">
 
             <!-- CH 01 -->
@@ -595,15 +598,15 @@
               </div>
             </div>
 
-            <!-- CH 04 -->
+            <!-- CH 04 (Aerator Oksigen) -->
             <div class="relay-card-styled" id="card-relay-4">
               <div class="relay-top-bar">
                 <span class="relay-badge-pill relay-badge-off" id="badge-relay-4">OFF (LOW)</span>
               </div>
               <div class="relay-name-box" id="name-box-relay-4">
-                <input type="text" class="relay-device-input" id="name-relay-4" value="Pompa Sirkulasi" readonly />
+                <input type="text" class="relay-device-input" id="name-relay-4" value="Aerator Oksigen" readonly />
                 <div class="relay-inner-icon" id="icon-anim-4">
-                  <i class="fa-solid fa-rotate fa-spin text-cyan"></i>
+                  <i class="fa-solid fa-wind fa-fade text-sky"></i>
                 </div>
               </div>
               <div class="relay-bottom-row">
@@ -616,155 +619,100 @@
               </div>
             </div>
 
-            <!-- CH 05 -->
-            <div class="relay-card-styled" id="card-relay-5">
-              <div class="relay-top-bar">
-                <span class="relay-badge-pill relay-badge-off" id="badge-relay-5">OFF (LOW)</span>
-              </div>
-              <div class="relay-name-box" id="name-box-relay-5">
-                <input type="text" class="relay-device-input" id="name-relay-5" value="Aerator Oksigen" readonly />
-                <div class="relay-inner-icon" id="icon-anim-5">
-                  <i class="fa-solid fa-wind fa-fade text-sky"></i>
-                </div>
-              </div>
-              <div class="relay-bottom-row">
-                <div class="relay-status-group">
-                  <span class="status-dot-mini gray" id="dot-relay-5"></span>
-                  <span class="status-text-styled" id="text-relay-5">TERPUTUS (LOW)</span>
-                </div>
-                <button class="btn-relay-action btn-relay-off" id="btn-relay-5"
-                  onclick="toggleRelayChannel(5)">HIDUPKAN</button>
-              </div>
-            </div>
-
-            <!-- CH 06 -->
-            <div class="relay-card-styled" id="card-relay-6">
-              <div class="relay-top-bar">
-                <span class="relay-badge-pill relay-badge-off" id="badge-relay-6">OFF (LOW)</span>
-              </div>
-              <div class="relay-name-box" id="name-box-relay-6">
-                <input type="text" class="relay-device-input" id="name-relay-6" value="Feeder Pakan" readonly />
-                <div class="relay-inner-icon feeder-svg-box" id="icon-anim-6">
-                  <svg class="feeder-eating-svg" viewBox="0 0 50 26" width="50" height="26">
-                    <!-- Falling pellets -->
-                    <circle class="pellet-dot p1" cx="36" cy="4" r="2.2" fill="#F59E0B" />
-                    <circle class="pellet-dot p2" cx="34" cy="11" r="1.8" fill="#D97706" />
-                    <circle class="pellet-dot p3" cx="38" cy="17" r="1.8" fill="#F59E0B" />
-
-                    <!-- Swimming & Eating Fish -->
-                    <g class="fish-eating-group">
-                      <!-- Fish Body -->
-                      <path d="M 22 13 C 16 7 8 8 3 6 C 6 12 6 14 3 20 C 8 18 16 19 22 13 Z" fill="#2563EB" />
-                      <!-- Fish Tail Fin -->
-                      <path d="M 4 13 L 0 8 L 1 13 L 0 18 Z" fill="#1D4ED8" />
-                      <!-- Fish Eye -->
-                      <circle cx="18" cy="11" r="1.2" fill="#FFFFFF" />
-                      <circle cx="18.3" cy="11" r="0.6" fill="#0F172A" />
-                    </g>
-                  </svg>
-                </div>
-              </div>
-              <div class="relay-bottom-row">
-                <div class="relay-status-group">
-                  <span class="status-dot-mini gray" id="dot-relay-6"></span>
-                  <span class="status-text-styled" id="text-relay-6">TERPUTUS (LOW)</span>
-                </div>
-                <button class="btn-relay-action btn-relay-off" id="btn-relay-6" onclick="toggleRelayChannel(6)">BERI
-                  PAKAN</button>
-              </div>
-            </div>
-
           </div>
 
-          <!-- Card Kontrol Pakan Auto / Manual -->
-          <div class="card feed-control-card">
-            <div class="feed-control-title">Kontrol Pakan</div>
+          <!-- 2 Schedule Cards Sejajar Berdampingan (Ukuran Sama, Rapi & Seimbang) -->
+          <div class="schedules-grid-row">
 
-            <!-- Feed Mode Tabs -->
-            <div class="segmented-control">
-              <button class="segment-btn active" id="tab-feed-auto">Auto</button>
-              <button class="segment-btn" id="tab-feed-manual">Manual</button>
-            </div>
-
-            <!-- Auto Mode Container -->
-            <div id="feed-auto-container" class="feed-mode-panel active">
-              <div class="schedule-header-flex">
-                <span class="schedule-subheading">Jadwal (Auto)</span>
-                <button class="btn-link-add" id="add-schedule-btn">+ Tambah Jam</button>
-              </div>
-
-              <div class="schedule-list" id="schedule-items-list">
-                <div class="schedule-item">
-                  <div class="sched-left">
-                    <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
-                    <span class="sched-time">08:00</span>
-                  </div>
-                  <div class="sched-right">
-                    <span class="sched-portion">1 Porsi</span>
-                    <button class="sched-edit-btn" onclick="editSchedule(0)" title="Edit Jadwal">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button class="sched-delete-btn" onclick="deleteSchedule(0)" title="Hapus Jadwal">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="schedule-item">
-                  <div class="sched-left">
-                    <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
-                    <span class="sched-time">16:00</span>
-                  </div>
-                  <div class="sched-right">
-                    <span class="sched-portion">2 Porsi</span>
-                    <button class="sched-edit-btn" onclick="editSchedule(1)" title="Edit Jadwal">
-                      <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button class="sched-delete-btn" onclick="deleteSchedule(1)" title="Hapus Jadwal">
-                      <i class="fa-solid fa-trash"></i>
-                    </button>
-                  </div>
+            <!-- Card 1: Kontrol & Jadwal Pakan Ikan -->
+            <div class="card feed-control-card">
+              <div class="schedule-header-flex" style="margin-bottom: 14px;">
+                <div class="card-title flex-align-center gap-8">
+                  <span>Jadwal &amp; Kontrol Pakan</span>
                 </div>
               </div>
-            </div>
 
-            <!-- Manual Mode Container -->
-            <div id="feed-manual-container" class="feed-mode-panel">
-              <div class="manual-feed-box">
-                <p class="manual-desc">Keluarkan pakan ikan secara manual sekarang:</p>
-                <div class="portion-selector">
-                  <label>Jumlah Porsi:</label>
-                  <select id="manual-portion-select" class="form-select">
-                    <option value="1">1 Porsi (Standard)</option>
-                    <option value="2">2 Porsi (Extra)</option>
-                    <option value="3">3 Porsi (Maximum)</option>
-                  </select>
+              <!-- Feed Mode Tabs -->
+              <div class="segmented-control" style="margin-bottom: 12px;">
+                <button class="segment-btn active" id="tab-feed-auto">Auto (Jadwal)</button>
+                <button class="segment-btn" id="tab-feed-manual">Manual (Sekarang)</button>
+              </div>
+
+              <!-- Auto Mode Container -->
+              <div id="feed-auto-container" class="feed-mode-panel active">
+                <div class="schedule-header-flex" style="margin-bottom: 8px;">
+                  <span class="schedule-subheading">Daftar Jam Pakan</span>
+                  <button class="btn-link-add" id="add-schedule-btn">+ Tambah Jam</button>
                 </div>
-                <button class="btn-primary-gradient width-100 margin-top-12" id="trigger-manual-feed-btn">
-                  <i class="fa-solid fa-paper-plane"></i> Berikan Pakan Manual
-                </button>
+
+                <div class="schedule-list" id="schedule-items-list">
+                  <div class="schedule-item">
+                    <div class="sched-left">
+                      <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
+                      <span class="sched-time">08:00</span>
+                    </div>
+                    <div class="sched-right">
+                      <span class="sched-portion">1 Porsi</span>
+                      <button class="sched-edit-btn" onclick="editSchedule(0)" title="Edit Jadwal">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button class="sched-delete-btn" onclick="deleteSchedule(0)" title="Hapus Jadwal">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="schedule-item">
+                    <div class="sched-left">
+                      <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
+                      <span class="sched-time">16:00</span>
+                    </div>
+                    <div class="sched-right">
+                      <span class="sched-portion">2 Porsi</span>
+                      <button class="sched-edit-btn" onclick="editSchedule(1)" title="Edit Jadwal">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button class="sched-delete-btn" onclick="deleteSchedule(1)" title="Hapus Jadwal">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Manual Mode Container -->
+              <div id="feed-manual-container" class="feed-mode-panel">
+                <div class="manual-feed-box">
+                  <div class="portion-selector" style="margin-bottom: 10px;">
+                    <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Pilih Porsi:</label>
+                    <select id="manual-portion-select" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--bg-main); font-weight: 700; color: var(--text-main); font-size: 12.5px;">
+                      <option value="1">1 Porsi (Standard)</option>
+                      <option value="2">2 Porsi (Extra)</option>
+                      <option value="3">3 Porsi (Maximum)</option>
+                    </select>
+                  </div>
+                  <button class="btn-primary-gradient width-100" id="trigger-manual-feed-btn" style="padding: 10px; font-weight: 800; border-radius: 10px; font-size: 12.5px;">
+                    <i class="fa-solid fa-paper-plane"></i> Berikan Pakan Manual
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Card 2: Jadwal Operasional Pompa -->
+            <div class="card pump-schedule-card">
+              <div class="schedule-header-flex" style="margin-bottom: 14px;">
+                <div class="card-title flex-align-center gap-8">
+                  <span>Jadwal Operasional Pompa</span>
+                </div>
+                <button class="btn-link-add" id="add-pump-sched-btn">+ Tambah Jadwal</button>
+              </div>
+
+              <div class="schedule-list" id="pump-schedule-list">
+                <!-- Dynamically populated by JS -->
               </div>
             </div>
 
-          </div>
-
-          <!-- Card Jadwal Harian Pompa Pembesaran & Peremajaan -->
-          <div class="card pump-schedule-card" style="margin-top: 20px;">
-            <div class="schedule-header-flex">
-              <div class="card-title flex-align-center gap-8">
-                <i class="fa-solid fa-clock-rotate-left text-primary"></i>
-                <span>Jadwal Operasional Pompa (CH 2 &amp; CH 3)</span>
-              </div>
-              <button class="btn-link-add" id="add-pump-sched-btn">+ Tambah Jadwal</button>
-            </div>
-
-            <p class="pump-sched-desc" style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
-              Atur jam otomatis menyala (ON) dan mati (OFF) harian untuk Pompa Pembesaran &amp; Peremajaan:
-            </p>
-
-            <div class="pump-schedule-list" id="pump-schedule-list">
-              <!-- Dynamically populated by JS -->
-            </div>
           </div>
 
         </section>
@@ -772,7 +720,6 @@
         <!-- ================= TAB 4: CONFIG ================= -->
         <section class="tab-panel" id="tab-config">
 
-          <h2 class="config-section-title">Config</h2>
 
           <div class="config-menu-grid">
 
@@ -876,46 +823,40 @@
     <!-- MODAL CONFIRMATION FOR FEEDER PAKAN -->
     <div class="modal-overlay" id="modal-feeder-confirm">
       <div class="modal-card"
-        style="max-width: 420px; width: 90%; border-radius: 24px; padding: 24px; background: #FFFFFF; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+        style="max-width: 360px; width: 90%; border-radius: 18px; padding: 18px 20px; background: var(--card-bg, #FFFFFF); box-shadow: 0 15px 30px rgba(0,0,0,0.15); border: 1px solid var(--card-border, #E2E8F0);">
         <div class="modal-content-styled">
-          <div class="info-box-amber"
-            style="background: #FEF3C7; color: #92400E; padding: 12px 16px; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-utensils text-amber"></i>
-            <span>Konfirmasi Pemberian Pakan Ikan</span>
-          </div>
-
-          <p style="font-size:14px; color:#334155; margin-top:14px; line-height:1.5; font-weight:500;">
-            Apakah Anda yakin ingin memberi pakan ikan sekarang?
-          </p>
+          <h3 style="font-size: 15px; font-weight: 800; color: var(--text-main, #0F172A); margin: 0 0 12px 0; text-align: center;">
+            Beri Pakan Ikan Sekarang?
+          </h3>
 
           <!-- Portion Stepper in Modal -->
           <div
-            style="margin-top: 16px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 16px; text-align: center;">
-            <div style="font-size: 13px; font-weight: 700; color: #64748B; margin-bottom: 10px;">Jumlah Porsi Pakan:
+            style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 12px; padding: 10px 14px; text-align: center;">
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--text-muted, #64748B); margin-bottom: 6px;">
+              Jumlah Porsi Pakan:
             </div>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 14px;">
               <button id="modal-confirm-portion-minus"
-                style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font-size: 18px; font-weight: 800; color: #0F172A; cursor: pointer;"
+                style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--card-border, #CBD5E1); background: var(--card-bg, #FFFFFF); font-size: 16px; font-weight: 800; color: var(--text-main, #0F172A); cursor: pointer;"
                 onclick="changeConfirmPortion(-1)">-</button>
               <span id="modal-confirm-portion-val"
-                style="font-size: 18px; font-weight: 800; color: #2563EB; min-width: 80px;">1 Porsi</span>
+                style="font-size: 16px; font-weight: 800; color: var(--primary, #2563EB); min-width: 70px;">1 Porsi</span>
               <button id="modal-confirm-portion-plus"
-                style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #CBD5E1; background: #FFFFFF; font-size: 18px; font-weight: 800; color: #0F172A; cursor: pointer;"
+                style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--card-border, #CBD5E1); background: var(--card-bg, #FFFFFF); font-size: 16px; font-weight: 800; color: var(--text-main, #0F172A); cursor: pointer;"
                 onclick="changeConfirmPortion(1)">+</button>
             </div>
           </div>
 
           <div
-            style="font-size:12px; color:#64748B; background:#F1F5F9; padding:10px 14px; border-radius:10px; margin-top:14px; display: flex; align-items: center; gap: 6px;">
-            <span>⏱️</span>
-            <span><b>Durasi Motor:</b> Aktif 10 Detik per Porsi &bull; Otomatis Mati</span>
+            style="font-size: 11px; color: var(--text-muted, #64748B); background: var(--bg-main, #F1F5F9); padding: 7px 12px; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>⏱️ <b>Durasi:</b> 10 Detik per Porsi &bull; Otomatis Mati</span>
           </div>
 
-          <div class="modal-actions-row" style="margin-top:20px; display:flex; gap:12px;">
+          <div class="modal-actions-row" style="margin-top: 14px; display: flex; gap: 10px;">
             <button class="btn-modal-close" id="btn-cancel-feed"
-              style="flex:1; padding:12px; border-radius:12px; border:1px solid #CBD5E1; background:#FFFFFF; color:#475569; font-weight:700; cursor:pointer;">Batal</button>
+              style="flex: 1; padding: 9px 14px; border-radius: 10px; border: 1px solid var(--card-border, #CBD5E1); background: var(--card-bg, #FFFFFF); color: var(--text-main, #475569); font-weight: 700; font-size: 13px; cursor: pointer;">Batal</button>
             <button class="btn-modal-save" id="btn-confirm-feed"
-              style="flex:1; padding:12px; border-radius:12px; border:none; background:#2563EB; color:#FFFFFF; font-weight:700; cursor:pointer; box-shadow:0 4px 12px rgba(37,99,235,0.3);">Ya,
+              style="flex: 1; padding: 9px 14px; border-radius: 10px; border: none; background: #2563EB; color: #FFFFFF; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 3px 10px rgba(37,99,235,0.25);">Ya,
               Beri Pakan</button>
           </div>
         </div>
@@ -928,7 +869,6 @@
         <!-- Header -->
         <div class="modal-header-styled">
           <div class="modal-title-wrap">
-            <div class="modal-title-icon-blue"><i class="fa-regular fa-clock"></i></div>
             <h3 id="modal-sched-title" class="modal-title-text">Tambah Jadwal Pakan</h3>
           </div>
           <button id="modal-sched-close-btn" class="modal-close-x" title="Tutup">&times;</button>
@@ -982,42 +922,69 @@
         <!-- Header -->
         <div class="modal-header-styled">
           <div class="modal-title-wrap">
-            <div class="modal-title-icon-blue"><i class="fa-solid fa-sliders"></i></div>
             <h3 id="modal-pump-title" class="modal-title-text">Tambah Jadwal Pompa</h3>
           </div>
           <button id="modal-pump-close-btn" class="modal-close-x" title="Tutup">&times;</button>
         </div>
 
         <!-- Select Pump -->
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label class="field-label" style="margin-bottom: 6px; display: block; font-size: 13px; font-weight: 700; color: var(--text-main);">Pilih Pompa / Mesin:</label>
-          <select id="pump-sched-target" class="form-select modal-input-box" style="width: 100%; font-weight: 700; font-size: 13.5px;">
-            <option value="2">Pompa Pembesaran (CH 02)</option>
-            <option value="3">Pompa Peremajaan (CH 03)</option>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="field-label" style="margin-bottom: 4px; display: block; font-size: 12px; font-weight: 700; color: var(--text-main);">Pilih Pompa / Mesin:</label>
+          <select id="pump-sched-target" class="form-select modal-input-box" style="width: 100%; font-weight: 700; font-size: 12.5px; padding: 7px 10px; border-radius: 8px;">
+            <option value="2">Pompa Pembesaran</option>
+            <option value="3">Pompa Peremajaan</option>
           </select>
         </div>
 
-        <!-- Time Range (ON & OFF) -->
-        <div class="pump-time-grid">
-          <div class="form-group">
-            <label class="pump-time-label label-on">
-              <i class="fa-solid fa-circle-play"></i> Jam Nyala (ON):
-            </label>
-            <input type="time" id="pump-sched-start" value="07:00" class="pump-time-input" />
+        <!-- Stepper Time Pickers (Jam Menyala & Jam Mati) -->
+        <div class="pump-time-pickers-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+          
+          <!-- Jam Menyala (ON) -->
+          <div class="pump-picker-box" style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 10px; padding: 8px 6px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 800; color: #059669; margin-bottom: 4px;">Jam Menyala (ON)</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
+              <!-- Hour -->
+              <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartHour(1)"><i class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-start-hour-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">07</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartHour(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+              </div>
+              <span style="font-weight: 800; color: var(--text-muted); font-size: 14px; margin: 0 1px;">:</span>
+              <!-- Minute -->
+              <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartMin(1)"><i class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-start-min-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">00</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartMin(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+              </div>
+            </div>
           </div>
 
-          <div class="form-group">
-            <label class="pump-time-label label-off">
-              <i class="fa-solid fa-circle-stop"></i> Jam Mati (OFF):
-            </label>
-            <input type="time" id="pump-sched-end" value="17:00" class="pump-time-input" />
+          <!-- Jam Mati (OFF) -->
+          <div class="pump-picker-box" style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 10px; padding: 8px 6px; text-align: center;">
+            <div style="font-size: 11px; font-weight: 800; color: #DC2626; margin-bottom: 4px;">Jam Mati (OFF)</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
+              <!-- Hour -->
+              <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndHour(1)"><i class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-end-hour-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">17</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndHour(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+              </div>
+              <span style="font-weight: 800; color: var(--text-muted); font-size: 14px; margin: 0 1px;">:</span>
+              <!-- Minute -->
+              <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndMin(1)"><i class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-end-min-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">00</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndMin(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+              </div>
+            </div>
           </div>
+
         </div>
 
         <!-- Note info -->
-        <div class="pump-info-callout">
-          <i class="fa-solid fa-circle-info text-primary" style="margin-top: 2px;"></i>
-          <span>Pompa akan otomatis menyala pada <b>Jam Nyala</b> dan mati pada <b>Jam Mati</b> setiap hari.</span>
+        <div class="pump-info-callout" style="padding: 6px 10px; font-size: 11px; margin-bottom: 12px; border-radius: 8px; background: var(--bg-main, #F1F5F9); border: 1px solid var(--card-border, #E2E8F0); display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-circle-info text-primary" style="font-size: 12px;"></i>
+          <span>Otomatis aktif pada <b>Jam Menyala</b> &amp; mati pada <b>Jam Mati</b>.</span>
         </div>
 
         <!-- Actions -->
