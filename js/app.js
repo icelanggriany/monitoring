@@ -442,25 +442,26 @@ function initRealtimeDataBinding() {
               }
             } else {
               // Untuk CH1-CH5 (ATS, Pembesaran, Peremajaan, Aerator, Cadangan):
-              // Jika user belum pernah klik tombol, gunakan status dari Firebase.
-              // Jika user sudah klik tombol, kunci status sesuai perintah user.
-              if (state.userControlledRelays[idx] === undefined) {
-                if (state.relays[idx] !== val) {
-                  state.relays[idx] = val;
-                  changed = true;
+              // Sinkronkan status riil dari hardware/ESP32
+              if (state.relays[idx] !== val) {
+                state.relays[idx] = val;
+                if (state.userControlledRelays[idx] !== undefined) {
+                  state.userControlledRelays[idx] = val;
                 }
-              } else {
-                // Pertahankan status pilihan user
-                if (state.relays[idx] !== state.userControlledRelays[idx]) {
-                  state.relays[idx] = state.userControlledRelays[idx];
-                  changed = true;
-                }
+                changed = true;
               }
             }
           });
 
           if (changed && typeof syncRelayUI === 'function') {
             syncRelayUI();
+          }
+        } else if (data.lamp !== undefined) {
+          const lampVal = parseInt(data.lamp);
+          if (state.relays[0] !== lampVal) {
+            state.relays[0] = lampVal;
+            if (state.userControlledRelays) state.userControlledRelays[0] = lampVal;
+            if (typeof syncRelayUI === 'function') syncRelayUI();
           }
         }
 
@@ -823,10 +824,10 @@ function updateUI() {
   const vAki = (state.telemetry.voltase_aki !== undefined) ? state.telemetry.voltase_aki : 0.0;
   const elVoltase = document.getElementById('val-voltase-aki');
   const pillDaya = document.getElementById('pill-status-daya');
-  const isVoltageLow = (vAki <= 11.7 && vAki >= 9.5);
+  const isVoltageLow = (vAki <= 11.7 && vAki >= 6.0);
 
   if (elVoltase) {
-    elVoltase.innerHTML = `${vAki.toFixed(1)} V`;
+    elVoltase.innerHTML = `${vAki.toFixed(2)} V`;
     if (isVoltageLow) {
       elVoltase.className = 'power-val text-critical-red font-weight-800';
     } else {
@@ -848,7 +849,7 @@ function updateUI() {
     sendTelegramAlert('web_voltage_low', `⚠️ <b>PERINGATAN VOLTASE AKI KRITIS!</b>\nVoltase aki terdeteksi <b>${vAki.toFixed(1)} V</b> (<= 11.7V).\n\n<i>Sistem otomatis memutus mesin dan beralih ke <b>Panel Surya (ATS Switch ON)</b>!</i>`);
   }
 
-  // Update Chart Badges
+  // Update Chart Badges & Monitoring Tab Mini KPI Items
   const bSuhuAir = document.getElementById('badge-chart-suhu-air');
   if (bSuhuAir) bSuhuAir.innerHTML = `${state.telemetry.suhu_air.toFixed(1)} &deg;C`;
 
@@ -860,6 +861,39 @@ function updateUI() {
 
   const bSuhuUdara = document.getElementById('badge-chart-suhu-udara');
   if (bSuhuUdara) bSuhuUdara.innerHTML = `${state.telemetry.suhu_udara.toFixed(1)} &deg;C`;
+
+  // Mini KPI Cards in Monitoring Tab
+  const monKpiSuhuAir = document.getElementById('mon-kpi-suhu-air');
+  const monBadgeSuhuAir = document.getElementById('mon-badge-suhu-air');
+  if (monKpiSuhuAir) monKpiSuhuAir.innerHTML = `${state.telemetry.suhu_air.toFixed(1)} &deg;C`;
+  if (monBadgeSuhuAir) {
+    monBadgeSuhuAir.className = (suhuAir >= 24 && suhuAir <= 32) ? 'kpi-badge badge-green' : 'kpi-badge badge-red';
+    monBadgeSuhuAir.innerText = (suhuAir >= 24 && suhuAir <= 32) ? 'Optimal' : 'Perhatian';
+  }
+
+  const monKpiTds = document.getElementById('mon-kpi-tds');
+  const monBadgeTds = document.getElementById('mon-badge-tds');
+  if (monKpiTds) monKpiTds.innerText = `${tdsVal} PPM`;
+  if (monBadgeTds) {
+    monBadgeTds.className = (tdsVal >= 400 && tdsVal <= 900) ? 'kpi-badge badge-green' : (tdsVal < 400 ? 'kpi-badge badge-amber' : 'kpi-badge badge-red');
+    monBadgeTds.innerText = (tdsVal >= 400 && tdsVal <= 900) ? 'Optimal' : (tdsVal < 400 ? 'Rendah' : 'Pekat');
+  }
+
+  const monKpiLevelAir = document.getElementById('mon-kpi-level-air');
+  const monBadgeLevelAir = document.getElementById('mon-badge-level-air');
+  if (monKpiLevelAir) monKpiLevelAir.innerText = `${levelAir.toFixed(1)}%`;
+  if (monBadgeLevelAir) {
+    monBadgeLevelAir.className = (levelAir >= 60) ? 'kpi-badge badge-cyan' : 'kpi-badge badge-red';
+    monBadgeLevelAir.innerText = (levelAir >= 60) ? 'Aman' : 'Kritis';
+  }
+
+  const monKpiSuhuUdara = document.getElementById('mon-kpi-suhu-udara');
+  const monBadgeSuhuUdara = document.getElementById('mon-badge-suhu-udara');
+  if (monKpiSuhuUdara) monKpiSuhuUdara.innerHTML = `${state.telemetry.suhu_udara.toFixed(1)} &deg;C`;
+  if (monBadgeSuhuUdara) {
+    monBadgeSuhuUdara.className = (state.telemetry.suhu_udara >= 20 && state.telemetry.suhu_udara <= 33) ? 'kpi-badge badge-orange' : 'kpi-badge badge-red';
+    monBadgeSuhuUdara.innerText = (state.telemetry.suhu_udara >= 20 && state.telemetry.suhu_udara <= 33) ? 'Normal' : 'Ekstrem';
+  }
 
   // Update Dynamic Ecosystem Status (Fish water level & Plant TDS health)
   updateEcosystemStatus();

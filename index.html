@@ -457,26 +457,113 @@
 
         </section>
 
-        <!-- ================= TAB 2: MONITORING (CHARTS) ================= -->
+        <!-- ================= TAB 2: MONITORING (CHARTS & TELEMETRY HUB) ================= -->
         <section class="tab-panel" id="tab-monitoring">
 
-          <!-- Filter Tab Group (Segmented Bar) -->
-          <div class="filter-tab-group">
-            <button class="filter-btn active" data-period="harian">Harian</button>
-            <button class="filter-btn" data-period="mingguan">Mingguan</button>
-            <button class="filter-btn" data-period="bulanan">Bulanan</button>
+          <!-- 1. Top Telemetry Overview Banner -->
+          <div class="monitoring-hero-card">
+
+            <!-- A. 4 Quick Mini KPI Cards (1 Single Horizontal Row) -->
+            <div class="monitoring-kpi-grid">
+              <!-- KPI 1: Suhu Air -->
+              <div class="monitoring-kpi-item kpi-blue">
+                <div class="kpi-icon-wrap">
+                  <i class="fa-solid fa-temperature-three-quarters text-blue"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-label">Suhu Air</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-number" id="mon-kpi-suhu-air">0.0&deg;C</span>
+                    <span class="kpi-badge badge-green" id="mon-badge-suhu-air">Optimal</span>
+                  </div>
+                  <span class="kpi-sub">Target: 24 - 32&deg;C</span>
+                </div>
+              </div>
+
+              <!-- KPI 2: TDS Nutrisi -->
+              <div class="monitoring-kpi-item kpi-emerald">
+                <div class="kpi-icon-wrap">
+                  <i class="fa-solid fa-flask text-emerald"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-label">TDS Nutrisi</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-number" id="mon-kpi-tds">0 PPM</span>
+                    <span class="kpi-badge badge-green" id="mon-badge-tds">Optimal</span>
+                  </div>
+                  <span class="kpi-sub">Target: 400 - 900</span>
+                </div>
+              </div>
+
+              <!-- KPI 3: Level Air -->
+              <div class="monitoring-kpi-item kpi-teal">
+                <div class="kpi-icon-wrap">
+                  <i class="fa-solid fa-water text-teal"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-label">Level Air</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-number" id="mon-kpi-level-air">0.0%</span>
+                    <span class="kpi-badge badge-cyan" id="mon-badge-level-air">Aman</span>
+                  </div>
+                  <span class="kpi-sub">Target: 60 - 95%</span>
+                </div>
+              </div>
+
+              <!-- KPI 4: Suhu Udara -->
+              <div class="monitoring-kpi-item kpi-amber">
+                <div class="kpi-icon-wrap">
+                  <i class="fa-solid fa-sun text-amber"></i>
+                </div>
+                <div class="kpi-info">
+                  <span class="kpi-label">Suhu Udara</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-number" id="mon-kpi-suhu-udara">0.0&deg;C</span>
+                    <span class="kpi-badge badge-orange" id="mon-badge-suhu-udara">Normal</span>
+                  </div>
+                  <span class="kpi-sub">Target: 20 - 33&deg;C</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- B. Time Range Switcher -->
+            <div class="monitoring-filter-row">
+              <div class="filter-tab-group upgraded-filter-group">
+                <button class="filter-btn active" data-period="harian">
+                  <i class="fa-solid fa-bolt-lightning"></i> Harian <span class="filter-sub-badge">Detik &amp;
+                    Menit</span>
+                </button>
+                <button class="filter-btn" data-period="mingguan">
+                  <i class="fa-solid fa-calendar-week"></i> Mingguan <span class="filter-sub-badge">7 Hari</span>
+                </button>
+                <button class="filter-btn" data-period="bulanan">
+                  <i class="fa-solid fa-calendar-days"></i> Bulanan <span class="filter-sub-badge">30 Hari</span>
+                </button>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Charts Stack Grid (Full Width 1-Column Layout) -->
-          <div class="charts-container">
+          <!-- 2. Responsive 2x2 Desktop Grid Charts Container -->
+          <div class="monitoring-charts-grid">
 
             <!-- Chart 1: Suhu Air Kolam -->
-            <div class="card chart-card">
+            <div class="card chart-card upgraded-chart-card card-glow-blue">
               <div class="chart-card-header">
-                <div class="chart-title">
-                  <i class="fa-solid fa-temperature-high text-emerald"></i> Grafik Suhu Air Kolam (&deg;C)
+                <div class="chart-title-group">
+                  <span class="chart-icon-box bg-soft-blue text-blue">
+                    <i class="fa-solid fa-temperature-high"></i>
+                  </span>
+                  <div>
+                    <div class="chart-main-title">Suhu Air Kolam (&deg;C)</div>
+                    <div class="chart-meta-sub">Target Ideal Ikan: <b>24.0 - 32.0 &deg;C</b></div>
+                  </div>
                 </div>
-                <span class="chart-metric-badge badge-blue" id="badge-chart-suhu-air">26.3 &deg;C</span>
+                <div class="chart-header-actions">
+                  <span class="chart-metric-badge badge-blue" id="badge-chart-suhu-air">26.3 &deg;C</span>
+                  <span class="chart-interactive-hint" title="Klik titik bulat untuk detail angka"><i
+                      class="fa-regular fa-hand-pointer"></i> Klik Titik</span>
+                </div>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-suhu-air"></canvas>
@@ -484,12 +571,22 @@
             </div>
 
             <!-- Chart 2: TDS Nutrisi Air -->
-            <div class="card chart-card">
+            <div class="card chart-card upgraded-chart-card card-glow-emerald">
               <div class="chart-card-header">
-                <div class="chart-title">
-                  <i class="fa-solid fa-flask text-emerald"></i> Grafik TDS Nutrisi Air (PPM)
+                <div class="chart-title-group">
+                  <span class="chart-icon-box bg-soft-emerald text-emerald">
+                    <i class="fa-solid fa-flask"></i>
+                  </span>
+                  <div>
+                    <div class="chart-main-title">TDS Nutrisi Air (PPM)</div>
+                    <div class="chart-meta-sub">Target Nutrisi Sayur: <b>400 - 900 PPM</b></div>
+                  </div>
                 </div>
-                <span class="chart-metric-badge badge-green" id="badge-chart-tds">0 PPM</span>
+                <div class="chart-header-actions">
+                  <span class="chart-metric-badge badge-green" id="badge-chart-tds">0 PPM</span>
+                  <span class="chart-interactive-hint" title="Klik titik bulat untuk detail angka"><i
+                      class="fa-regular fa-hand-pointer"></i> Klik Titik</span>
+                </div>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-tds"></canvas>
@@ -497,12 +594,22 @@
             </div>
 
             <!-- Chart 3: Level Air Kolam -->
-            <div class="card chart-card">
+            <div class="card chart-card upgraded-chart-card card-glow-teal">
               <div class="chart-card-header">
-                <div class="chart-title">
-                  <i class="fa-solid fa-water text-teal"></i> Grafik Level Air Kolam (%)
+                <div class="chart-title-group">
+                  <span class="chart-icon-box bg-soft-teal text-teal">
+                    <i class="fa-solid fa-water"></i>
+                  </span>
+                  <div>
+                    <div class="chart-main-title">Level Air Kolam (%)</div>
+                    <div class="chart-meta-sub">Batas Ketinggian Aman: <b>&gt; 60.0 %</b></div>
+                  </div>
                 </div>
-                <span class="chart-metric-badge badge-cyan" id="badge-chart-level-air">66.9%</span>
+                <div class="chart-header-actions">
+                  <span class="chart-metric-badge badge-cyan" id="badge-chart-level-air">66.9%</span>
+                  <span class="chart-interactive-hint" title="Klik titik bulat untuk detail angka"><i
+                      class="fa-regular fa-hand-pointer"></i> Klik Titik</span>
+                </div>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-level-air"></canvas>
@@ -510,12 +617,22 @@
             </div>
 
             <!-- Chart 4: Suhu Udara Ambient -->
-            <div class="card chart-card">
+            <div class="card chart-card upgraded-chart-card card-glow-amber">
               <div class="chart-card-header">
-                <div class="chart-title">
-                  <i class="fa-solid fa-sun text-amber"></i> Grafik Suhu Udara Ambient (&deg;C)
+                <div class="chart-title-group">
+                  <span class="chart-icon-box bg-soft-amber text-amber">
+                    <i class="fa-solid fa-sun"></i>
+                  </span>
+                  <div>
+                    <div class="chart-main-title">Suhu Udara Ambient (&deg;C)</div>
+                    <div class="chart-meta-sub">Suhu Lingkungan Normal: <b>20.0 - 33.0 &deg;C</b></div>
+                  </div>
                 </div>
-                <span class="chart-metric-badge badge-orange" id="badge-chart-suhu-udara">27.6 &deg;C</span>
+                <div class="chart-header-actions">
+                  <span class="chart-metric-badge badge-orange" id="badge-chart-suhu-udara">27.6 &deg;C</span>
+                  <span class="chart-interactive-hint" title="Klik titik bulat untuk detail angka"><i
+                      class="fa-regular fa-hand-pointer"></i> Klik Titik</span>
+                </div>
               </div>
               <div class="chart-canvas-wrapper">
                 <canvas id="chart-suhu-udara"></canvas>
@@ -681,14 +798,18 @@
               <div id="feed-manual-container" class="feed-mode-panel">
                 <div class="manual-feed-box">
                   <div class="portion-selector" style="margin-bottom: 10px;">
-                    <label style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Pilih Porsi:</label>
-                    <select id="manual-portion-select" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--bg-main); font-weight: 700; color: var(--text-main); font-size: 12.5px;">
+                    <label
+                      style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 4px;">Pilih
+                      Porsi:</label>
+                    <select id="manual-portion-select" class="form-select"
+                      style="width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--card-border); background: var(--bg-main); font-weight: 700; color: var(--text-main); font-size: 12.5px;">
                       <option value="1">1 Porsi (Standard)</option>
                       <option value="2">2 Porsi (Extra)</option>
                       <option value="3">3 Porsi (Maximum)</option>
                     </select>
                   </div>
-                  <button class="btn-primary-gradient width-100" id="trigger-manual-feed-btn" style="padding: 10px; font-weight: 800; border-radius: 10px; font-size: 12.5px;">
+                  <button class="btn-primary-gradient width-100" id="trigger-manual-feed-btn"
+                    style="padding: 10px; font-weight: 800; border-radius: 10px; font-size: 12.5px;">
                     <i class="fa-solid fa-paper-plane"></i> Berikan Pakan Manual
                   </button>
                 </div>
@@ -822,7 +943,8 @@
       <div class="modal-card"
         style="max-width: 360px; width: 90%; border-radius: 18px; padding: 18px 20px; background: var(--card-bg, #FFFFFF); box-shadow: 0 15px 30px rgba(0,0,0,0.15); border: 1px solid var(--card-border, #E2E8F0);">
         <div class="modal-content-styled">
-          <h3 style="font-size: 15px; font-weight: 800; color: var(--text-main, #0F172A); margin: 0 0 12px 0; text-align: center;">
+          <h3
+            style="font-size: 15px; font-weight: 800; color: var(--text-main, #0F172A); margin: 0 0 12px 0; text-align: center;">
             Beri Pakan Ikan Sekarang?
           </h3>
 
@@ -837,7 +959,8 @@
                 style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--card-border, #CBD5E1); background: var(--card-bg, #FFFFFF); font-size: 16px; font-weight: 800; color: var(--text-main, #0F172A); cursor: pointer;"
                 onclick="changeConfirmPortion(-1)">-</button>
               <span id="modal-confirm-portion-val"
-                style="font-size: 16px; font-weight: 800; color: var(--primary, #2563EB); min-width: 70px;">1 Porsi</span>
+                style="font-size: 16px; font-weight: 800; color: var(--primary, #2563EB); min-width: 70px;">1
+                Porsi</span>
               <button id="modal-confirm-portion-plus"
                 style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--card-border, #CBD5E1); background: var(--card-bg, #FFFFFF); font-size: 16px; font-weight: 800; color: var(--text-main, #0F172A); cursor: pointer;"
                 onclick="changeConfirmPortion(1)">+</button>
@@ -878,9 +1001,11 @@
         <div class="modern-time-picker-box">
           <!-- Hour Column -->
           <div class="time-digit-col">
-            <button id="sched-hour-up" class="time-adjust-btn" onclick="changeSchedHour(1)"><i class="fa-solid fa-chevron-up"></i></button>
+            <button id="sched-hour-up" class="time-adjust-btn" onclick="changeSchedHour(1)"><i
+                class="fa-solid fa-chevron-up"></i></button>
             <span id="sched-hour-val" class="time-digit-display">07</span>
-            <button id="sched-hour-down" class="time-adjust-btn" onclick="changeSchedHour(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+            <button id="sched-hour-down" class="time-adjust-btn" onclick="changeSchedHour(-1)"><i
+                class="fa-solid fa-chevron-down"></i></button>
           </div>
 
           <!-- Separator -->
@@ -888,9 +1013,11 @@
 
           <!-- Minute Column -->
           <div class="time-digit-col">
-            <button id="sched-min-up" class="time-adjust-btn" onclick="changeSchedMin(1)"><i class="fa-solid fa-chevron-up"></i></button>
+            <button id="sched-min-up" class="time-adjust-btn" onclick="changeSchedMin(1)"><i
+                class="fa-solid fa-chevron-up"></i></button>
             <span id="sched-min-val" class="time-digit-display">45</span>
-            <button id="sched-min-down" class="time-adjust-btn" onclick="changeSchedMin(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+            <button id="sched-min-down" class="time-adjust-btn" onclick="changeSchedMin(-1)"><i
+                class="fa-solid fa-chevron-down"></i></button>
           </div>
         </div>
 
@@ -915,7 +1042,7 @@
     <!-- MODAL POPUP FOR ADDING / EDITING PUMP SCHEDULE -->
     <div class="modal-overlay" id="modal-add-pump-schedule">
       <div class="modal-card modal-card-schedule">
-        
+
         <!-- Header -->
         <div class="modal-header-styled">
           <div class="modal-title-wrap">
@@ -926,52 +1053,70 @@
 
         <!-- Select Pump -->
         <div class="form-group" style="margin-bottom: 12px;">
-          <label class="field-label" style="margin-bottom: 4px; display: block; font-size: 12px; font-weight: 700; color: var(--text-main);">Pilih Pompa / Mesin:</label>
-          <select id="pump-sched-target" class="form-select modal-input-box" style="width: 100%; font-weight: 700; font-size: 12.5px; padding: 7px 10px; border-radius: 8px;">
+          <label class="field-label"
+            style="margin-bottom: 4px; display: block; font-size: 12px; font-weight: 700; color: var(--text-main);">Pilih
+            Pompa / Mesin:</label>
+          <select id="pump-sched-target" class="form-select modal-input-box"
+            style="width: 100%; font-weight: 700; font-size: 12.5px; padding: 7px 10px; border-radius: 8px;">
             <option value="2">Pompa Pembesaran</option>
             <option value="3">Pompa Peremajaan</option>
           </select>
         </div>
 
         <!-- Stepper Time Pickers (Jam Menyala & Jam Mati) -->
-        <div class="pump-time-pickers-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-          
+        <div class="pump-time-pickers-row"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+
           <!-- Jam Menyala (ON) -->
-          <div class="pump-picker-box" style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 10px; padding: 8px 6px; text-align: center;">
+          <div class="pump-picker-box"
+            style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 10px; padding: 8px 6px; text-align: center;">
             <div style="font-size: 11px; font-weight: 800; color: #059669; margin-bottom: 4px;">Jam Menyala (ON)</div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
               <!-- Hour -->
               <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartHour(1)"><i class="fa-solid fa-chevron-up"></i></button>
-                <span id="pump-start-hour-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">07</span>
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartHour(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartHour(1)"><i
+                    class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-start-hour-val"
+                  style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">07</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartHour(-1)"><i
+                    class="fa-solid fa-chevron-down"></i></button>
               </div>
               <span style="font-weight: 800; color: var(--text-muted); font-size: 14px; margin: 0 1px;">:</span>
               <!-- Minute -->
               <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartMin(1)"><i class="fa-solid fa-chevron-up"></i></button>
-                <span id="pump-start-min-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">00</span>
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartMin(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartMin(1)"><i
+                    class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-start-min-val"
+                  style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">00</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpStartMin(-1)"><i
+                    class="fa-solid fa-chevron-down"></i></button>
               </div>
             </div>
           </div>
 
           <!-- Jam Mati (OFF) -->
-          <div class="pump-picker-box" style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 10px; padding: 8px 6px; text-align: center;">
+          <div class="pump-picker-box"
+            style="background: var(--bg-main, #F8FAFC); border: 1px solid var(--card-border, #E2E8F0); border-radius: 10px; padding: 8px 6px; text-align: center;">
             <div style="font-size: 11px; font-weight: 800; color: #DC2626; margin-bottom: 4px;">Jam Mati (OFF)</div>
             <div style="display: flex; align-items: center; justify-content: center; gap: 2px;">
               <!-- Hour -->
               <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndHour(1)"><i class="fa-solid fa-chevron-up"></i></button>
-                <span id="pump-end-hour-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">17</span>
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndHour(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndHour(1)"><i
+                    class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-end-hour-val"
+                  style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">17</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndHour(-1)"><i
+                    class="fa-solid fa-chevron-down"></i></button>
               </div>
               <span style="font-weight: 800; color: var(--text-muted); font-size: 14px; margin: 0 1px;">:</span>
               <!-- Minute -->
               <div class="time-digit-col-mini" style="display: flex; flex-direction: column; align-items: center;">
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndMin(1)"><i class="fa-solid fa-chevron-up"></i></button>
-                <span id="pump-end-min-val" style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">00</span>
-                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndMin(-1)"><i class="fa-solid fa-chevron-down"></i></button>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndMin(1)"><i
+                    class="fa-solid fa-chevron-up"></i></button>
+                <span id="pump-end-min-val"
+                  style="font-size: 15px; font-weight: 800; color: var(--text-main); min-width: 22px; padding: 2px 0;">00</span>
+                <button type="button" class="time-adjust-btn-mini" onclick="changePumpEndMin(-1)"><i
+                    class="fa-solid fa-chevron-down"></i></button>
               </div>
             </div>
           </div>
@@ -979,7 +1124,8 @@
         </div>
 
         <!-- Note info -->
-        <div class="pump-info-callout" style="padding: 6px 10px; font-size: 11px; margin-bottom: 12px; border-radius: 8px; background: var(--bg-main, #F1F5F9); border: 1px solid var(--card-border, #E2E8F0); display: flex; align-items: center; gap: 6px;">
+        <div class="pump-info-callout"
+          style="padding: 6px 10px; font-size: 11px; margin-bottom: 12px; border-radius: 8px; background: var(--bg-main, #F1F5F9); border: 1px solid var(--card-border, #E2E8F0); display: flex; align-items: center; gap: 6px;">
           <i class="fa-solid fa-circle-info text-primary" style="font-size: 12px;"></i>
           <span>Otomatis aktif pada <b>Jam Menyala</b> &amp; mati pada <b>Jam Mati</b>.</span>
         </div>
