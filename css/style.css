@@ -4624,3 +4624,200 @@ body.dark-mode .sub-text-gray {
   word-break: break-word;
   overflow-wrap: break-word;
 }
+
+/* ==========================================================================
+   CHART POINT DETAIL INTERACTIVE MODAL
+   ========================================================================== */
+.chart-point-modal-card {
+  max-width: 400px;
+  width: 90%;
+  border-radius: 20px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--card-bg, #FFFFFF);
+  border: 1px solid var(--card-border, #E2E8F0);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.chart-point-modal-card .modal-header {
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--card-border, #E2E8F0);
+}
+
+.point-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.point-modal-icon-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563EB;
+}
+
+.point-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main, #1E293B);
+  margin: 0;
+}
+
+.point-modal-subtitle {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #64748B);
+}
+
+.point-modal-body {
+  padding: 20px;
+}
+
+.point-detail-display-card {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid var(--card-border, #E2E8F0);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+body.dark-mode .point-detail-display-card {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.point-detail-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.point-detail-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.point-detail-val {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-main, #0F172A);
+  letter-spacing: -1px;
+}
+
+body.dark-mode .point-detail-val {
+  color: #F8FAFC;
+}
+
+.point-detail-unit {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-muted, #64748B);
+  margin-left: 6px;
+}
+
+.point-detail-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+body.dark-mode .point-detail-status-pill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+}
+
+.point-detail-meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-main, #F8FAFC);
+  border: 1px solid var(--card-border, #E2E8F0);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+
+body.dark-mode .point-detail-meta-grid {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.point-meta-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+
+.point-meta-item .meta-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted, #64748B);
+  font-weight: 500;
+}
+
+.point-meta-item .meta-val {
+  color: var(--text-main, #1E293B);
+  font-weight: 600;
+}
+
+body.dark-mode .point-meta-item .meta-val {
+  color: #F8FAFC;
+}
+
+.point-modal-footer {
+  padding: 0 20px 20px 20px;
+}
+
+/* Smooth transitions for chart cards and canvas */
+.chart-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+}
+
+.chart-canvas-wrapper canvas {
+  transition: opacity 0.3s ease;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.02));
+}
+
+.chart-metric-badge {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}

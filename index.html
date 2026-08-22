@@ -1008,6 +1008,51 @@
       </div>
     </div>
 
+    <!-- MODAL DETAIL TITIK GRAFIK (POINT DETAIL) -->
+    <div class="modal-overlay" id="modal-chart-point-detail">
+      <div class="modal-card chart-point-modal-card">
+        <div class="modal-header">
+          <div class="point-modal-title-wrap">
+            <span class="point-modal-icon-badge" id="point-detail-icon-badge">
+              <i class="fa-solid fa-chart-line" id="point-detail-icon"></i>
+            </span>
+            <div>
+              <h3 id="point-detail-title" class="point-modal-title">Detail Data Sensor</h3>
+              <span id="point-detail-subtitle" class="point-modal-subtitle">Waktu Pencatatan</span>
+            </div>
+          </div>
+          <button class="modal-close-btn" id="modal-point-close-btn">&times;</button>
+        </div>
+        <div class="modal-body point-modal-body">
+          <div class="point-detail-display-card">
+            <div class="point-detail-label">Nilai Pengukuran</div>
+            <div class="point-detail-value-row">
+              <span class="point-detail-val" id="point-detail-val">0.0</span>
+              <span class="point-detail-unit" id="point-detail-unit">°C</span>
+            </div>
+            <div class="point-detail-status-pill" id="point-detail-status-pill">
+              <span class="status-dot green" id="point-detail-dot"></span>
+              <span id="point-detail-status-text">Status: Optimal</span>
+            </div>
+          </div>
+
+          <div class="point-detail-meta-grid">
+            <div class="point-meta-item">
+              <span class="meta-label"><i class="fa-regular fa-clock text-primary"></i> Waktu / Tanggal:</span>
+              <span class="meta-val font-weight-700" id="point-detail-time">-</span>
+            </div>
+            <div class="point-meta-item">
+              <span class="meta-label"><i class="fa-solid fa-bullseye text-teal"></i> Rentang Target:</span>
+              <span class="meta-val" id="point-detail-target">-</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer point-modal-footer">
+          <button class="btn-primary full-width" id="modal-point-ok-btn">Tutup</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Custom Scripts -->

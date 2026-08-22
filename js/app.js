@@ -498,38 +498,72 @@ function pushRealtimeChartData(data) {
   if (!charts) return;
 
   const suhuAirVal = data.suhu_air !== undefined ? parseFloat(data.suhu_air) : (data.temp_w !== undefined ? parseFloat(data.temp_w) : undefined);
-  if (suhuAirVal !== undefined && charts.suhuAir) {
-    const d = charts.suhuAir.data.datasets[0].data;
-    if (d && d.length > 0) {
-      d[d.length - 1] = suhuAirVal;
-      charts.suhuAir.update('none');
-    }
-  }
-
-  if (data.tds !== undefined && charts.tds) {
-    const d = charts.tds.data.datasets[0].data;
-    if (d && d.length > 0) {
-      d[d.length - 1] = Math.round(data.tds);
-      charts.tds.update('none');
-    }
-  }
-
+  const tdsVal = data.tds !== undefined ? Math.round(data.tds) : undefined;
   const levelAirVal = data.level_air !== undefined ? parseFloat(data.level_air) : (data.water_level !== undefined ? parseFloat(data.water_level) : undefined);
-  if (levelAirVal !== undefined && charts.levelAir) {
-    const d = charts.levelAir.data.datasets[0].data;
-    if (d && d.length > 0) {
-      d[d.length - 1] = levelAirVal;
-      charts.levelAir.update('none');
-    }
+  const suhuUdaraVal = data.suhu_udara !== undefined ? parseFloat(data.suhu_udara) : (data.temp_a !== undefined ? parseFloat(data.temp_a) : undefined);
+
+  // 1. Update Chart Header Badges seketika
+  if (suhuAirVal !== undefined) {
+    const bSuhuAir = document.getElementById('badge-chart-suhu-air');
+    if (bSuhuAir) bSuhuAir.innerHTML = `${suhuAirVal.toFixed(1)} &deg;C`;
+  }
+  if (tdsVal !== undefined) {
+    const bTds = document.getElementById('badge-chart-tds');
+    if (bTds) bTds.innerText = `${tdsVal} PPM`;
+  }
+  if (levelAirVal !== undefined) {
+    const bLevelAir = document.getElementById('badge-chart-level-air');
+    if (bLevelAir) bLevelAir.innerText = `${levelAirVal.toFixed(1)}%`;
+  }
+  if (suhuUdaraVal !== undefined) {
+    const bSuhuUdara = document.getElementById('badge-chart-suhu-udara');
+    if (bSuhuUdara) bSuhuUdara.innerHTML = `${suhuUdaraVal.toFixed(1)} &deg;C`;
   }
 
-  const suhuUdaraVal = data.suhu_udara !== undefined ? parseFloat(data.suhu_udara) : (data.temp_a !== undefined ? parseFloat(data.temp_a) : undefined);
-  if (suhuUdaraVal !== undefined && charts.suhuUdara) {
-    const d = charts.suhuUdara.data.datasets[0].data;
-    if (d && d.length > 0) {
-      d[d.length - 1] = suhuUdaraVal;
-      charts.suhuUdara.update('none');
+  // 2. Real-Time Dynamic Stream for Charts
+  const period = String(state.activePeriod || 'harian').toLowerCase().trim();
+  const now = new Date();
+  const curHour = String(now.getHours()).padStart(2, '0');
+  const curMin = String(now.getMinutes()).padStart(2, '0');
+  const curSec = String(now.getSeconds()).padStart(2, '0');
+  const curTimeStr = `${curHour}:${curMin}:${curSec}`;
+
+  const updateChartDataset = (chart, val) => {
+    if (!chart || val === undefined) return;
+    const labels = chart.data.labels;
+    const d = chart.data.datasets[0].data;
+    if (!d || d.length === 0) return;
+
+    if (period === 'harian' || period === 'daily') {
+      const lastLabel = labels[labels.length - 1];
+      // Jika detik baru tercapai, geser window grafik secara realtime dengan animasi mulus
+      if (lastLabel && lastLabel !== curTimeStr) {
+        labels.shift();
+        labels.push(curTimeStr);
+        d.shift();
+        d.push(val);
+        chart.update();
+      } else {
+        // Update titik terakhir
+        d[d.length - 1] = val;
+        chart.update();
+      }
+    } else {
+      // Mingguan / Bulanan: perbarui nilai titik terkini
+      d[d.length - 1] = val;
+      chart.update();
     }
+  };
+
+  updateChartDataset(charts.suhuAir, suhuAirVal);
+  updateChartDataset(charts.tds, tdsVal);
+  updateChartDataset(charts.levelAir, levelAirVal);
+  updateChartDataset(charts.suhuUdara, suhuUdaraVal);
+
+  if (suhuUdaraVal !== undefined && charts.miniSuhuUdara) {
+    const miniD = charts.miniSuhuUdara.data.datasets[0].data;
+    miniD[miniD.length - 1] = suhuUdaraVal;
+    charts.miniSuhuUdara.update('none');
   }
 }
 
@@ -987,19 +1021,42 @@ function updateFeedingCountdown() {
 
 function getChartTimeLabels(period) {
   const p = String(period || 'harian').toLowerCase().trim();
+  const now = new Date();
+
   if (p === 'harian' || p === 'daily') {
-    return ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00', '24:00'];
+    // Monitoring Harian: Jam, Menit, Detik (HH:mm:ss)
+    const labels = [];
+    for (let i = 8; i >= 0; i--) {
+      const d = new Date(now.getTime() - (i * 15 * 1000));
+      const curHour = String(d.getHours()).padStart(2, '0');
+      const curMin = String(d.getMinutes()).padStart(2, '0');
+      const curSec = String(d.getSeconds()).padStart(2, '0');
+      labels.push(`${curHour}:${curMin}:${curSec}`);
+    }
+    return labels;
   } else if (p === 'mingguan' || p === 'weekly') {
-    return ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
+    // Monitoring Mingguan: Tanggal dan Hari (contoh: '16/08 (Min)', '17/08 (Sen)', ..., '22/08 (Sab)')
+    const daysIndo = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const labels = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateNum = String(d.getDate()).padStart(2, '0');
+      const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+      const dayName = daysIndo[d.getDay()];
+      labels.push(`${dateNum}/${monthNum} (${dayName})`);
+    }
+    return labels;
   } else {
-    // Exact Bulanan date labels format matching user screenshot: '22 Jul', '26 Jul', '30 Jul', '3 Agt', '7 Agt', '11 Agt', '15 Agt', '19 Agt'
-    const monthsIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
-    const today = new Date();
+    // Monitoring Bulanan: Tanggal, Bulan, Tahun (format DD/MM/YY contohnya 22/08/26)
     const labels = [];
     for (let i = 7; i >= 0; i--) {
-      const d = new Date(today);
+      const d = new Date(now);
       d.setDate(d.getDate() - (i * 4));
-      labels.push(`${d.getDate()} ${monthsIndo[d.getMonth()]}`);
+      const dateNum = String(d.getDate()).padStart(2, '0');
+      const monthNum = String(d.getMonth() + 1).padStart(2, '0');
+      const yearNum = String(d.getFullYear()).slice(-2);
+      labels.push(`${dateNum}/${monthNum}/${yearNum}`);
     }
     return labels;
   }
@@ -1016,14 +1073,50 @@ function initCharts() {
   const commonOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      duration: 650,
+      easing: 'easeOutQuart'
+    },
+    transitions: {
+      active: {
+        animation: {
+          duration: 250,
+          easing: 'easeOutCubic'
+        }
+      }
+    },
     interaction: {
-      mode: 'index',
+      mode: 'nearest',
+      axis: 'x',
       intersect: false
+    },
+    onClick: (evt, elements, chart) => {
+      if (elements && elements.length > 0) {
+        const el = elements[0];
+        const datasetIndex = el.datasetIndex;
+        const index = el.index;
+        const dataset = chart.data.datasets[datasetIndex];
+        const timeLabel = chart.data.labels[index];
+        const rawVal = dataset.data[index];
+        const labelName = dataset.label || 'Data Sensor';
+        const canvasId = chart.canvas ? chart.canvas.id : '';
+
+        showChartPointDetail(canvasId, labelName, timeLabel, rawVal);
+      }
+    },
+    onHover: (evt, elements) => {
+      if (evt && evt.native && evt.native.target) {
+        evt.native.target.style.cursor = elements && elements.length > 0 ? 'pointer' : 'default';
+      }
     },
     plugins: {
       legend: { display: false },
       tooltip: {
         enabled: true,
+        animation: {
+          duration: 200,
+          easing: 'easeOutQuart'
+        },
         backgroundColor: '#27272A',
         titleColor: '#FFFFFF',
         titleFont: { family: 'Inter', size: 12, weight: '700' },
@@ -1056,6 +1149,20 @@ function initCharts() {
         }
       }
     },
+    elements: {
+      line: {
+        tension: 0.4,
+        cubicInterpolationMode: 'monotone',
+        borderCapStyle: 'round',
+        borderJoinStyle: 'round'
+      },
+      point: {
+        radius: 4.5,
+        hoverRadius: 8.5,
+        hitRadius: 25,
+        borderWidth: 2.5
+      }
+    },
     scales: {
       x: {
         grid: { display: false, drawBorder: false },
@@ -1073,6 +1180,25 @@ function initCharts() {
   const currentLevel = state.telemetry.level_air || 0.0;
   const currentSuhuUdara = state.telemetry.suhu_udara || 0.0;
 
+  const getInitialData = (type) => {
+    if (period === 'bulanan' || period === 'monthly') {
+      if (type === 'suhuAir') return [30.1, 28.5, 29.2, 29.0, 28.6, 29.8, 28.0, currentSuhuAir];
+      if (type === 'tds') return [15, 0, 10, 5, 0, 20, 0, currentTds];
+      if (type === 'levelAir') return [88, 84, 81, 77, 73, 70, 68, currentLevel];
+      if (type === 'suhuUdara') return [24.8, 26.0, 27.5, 28.7, 28.0, 27.4, 27.0, currentSuhuUdara];
+    } else if (period === 'mingguan' || period === 'weekly') {
+      if (type === 'suhuAir') return [25.9, 26.1, 26.3, 26.0, 26.4, 26.8, currentSuhuAir];
+      if (type === 'tds') return [520, 540, 560, 530, 580, 620, currentTds];
+      if (type === 'levelAir') return [85, 84, 83, 82, 80, 75, currentLevel];
+      if (type === 'suhuUdara') return [25.5, 26.0, 26.2, 26.5, 27.8, 28.9, currentSuhuUdara];
+    } else {
+      if (type === 'suhuAir') return [25.8, 25.6, 25.5, 26.0, 26.8, 27.2, 26.9, 26.5, currentSuhuAir];
+      if (type === 'tds') return [580, 585, 590, 595, 610, 605, 600, 592, currentTds];
+      if (type === 'levelAir') return [72, 70, 69, 75, 74, 71, 70, 69, currentLevel];
+      if (type === 'suhuUdara') return [24.5, 24.0, 25.2, 28.5, 31.0, 30.2, 28.4, 27.5, currentSuhuUdara];
+    }
+  };
+
   // 1. Chart Suhu Air Kolam (°C)
   const elSuhuAir = document.getElementById('chart-suhu-air');
   if (elSuhuAir) {
@@ -1083,20 +1209,22 @@ function initCharts() {
         labels: labels,
         datasets: [{
           label: 'Suhu Air (°C)',
-          data: period === 'bulanan'
-            ? [30.1, 28.5, 29.2, 29.0, 28.6, 29.8, 28.0, currentSuhuAir]
-            : [25.8, 25.6, 25.5, 26.0, 26.8, 27.2, 26.9, 26.5, currentSuhuAir],
+          data: getInitialData('suhuAir'),
           borderColor: '#2563EB',
           backgroundColor: 'rgba(37, 99, 235, 0.12)',
           borderWidth: 2.5,
           fill: true,
           tension: 0.4,
+          cubicInterpolationMode: 'monotone',
           spanGaps: true,
-          pointRadius: 4,
-          pointHoverRadius: 7,
+          pointRadius: 4.5,
+          pointHoverRadius: 8.5,
           pointBackgroundColor: '#2563EB',
           pointBorderColor: '#FFFFFF',
-          pointBorderWidth: 2
+          pointBorderWidth: 2,
+          pointHoverBorderWidth: 3,
+          pointHoverBackgroundColor: '#FFFFFF',
+          pointHoverBorderColor: '#2563EB'
         }]
       },
       options: {
@@ -1127,20 +1255,22 @@ function initCharts() {
         labels: labels,
         datasets: [{
           label: 'TDS Nutrisi Air (PPM)',
-          data: period === 'bulanan'
-            ? [15, 0, 10, 5, 0, 20, 0, currentTds]
-            : [580, 585, 590, 595, 610, 605, 600, 592, currentTds],
+          data: getInitialData('tds'),
           borderColor: '#10B981',
           backgroundColor: 'rgba(16, 185, 129, 0.10)',
           borderWidth: 2.5,
           fill: true,
           tension: 0.4,
+          cubicInterpolationMode: 'monotone',
           spanGaps: true,
-          pointRadius: 4,
-          pointHoverRadius: 7,
+          pointRadius: 4.5,
+          pointHoverRadius: 8.5,
           pointBackgroundColor: '#10B981',
           pointBorderColor: '#FFFFFF',
-          pointBorderWidth: 2
+          pointBorderWidth: 2,
+          pointHoverBorderWidth: 3,
+          pointHoverBackgroundColor: '#FFFFFF',
+          pointHoverBorderColor: '#10B981'
         }]
       },
       options: {
@@ -1172,18 +1302,22 @@ function initCharts() {
         labels: labels,
         datasets: [{
           label: 'Level Air Kolam (%)',
-          data: [72, 70, 69, 75, 74, 71, 70, 69, currentLevel],
+          data: getInitialData('levelAir'),
           borderColor: '#06B6D4',
           backgroundColor: 'rgba(6, 182, 212, 0.12)',
           borderWidth: 2.5,
           fill: true,
-          tension: 0.35,
+          tension: 0.4,
+          cubicInterpolationMode: 'monotone',
           spanGaps: true,
-          pointRadius: 4,
-          pointHoverRadius: 7,
+          pointRadius: 4.5,
+          pointHoverRadius: 8.5,
           pointBackgroundColor: '#06B6D4',
           pointBorderColor: '#FFFFFF',
-          pointBorderWidth: 2
+          pointBorderWidth: 2,
+          pointHoverBorderWidth: 3,
+          pointHoverBackgroundColor: '#FFFFFF',
+          pointHoverBorderColor: '#06B6D4'
         }]
       },
       options: {
@@ -1214,18 +1348,22 @@ function initCharts() {
         labels: labels,
         datasets: [{
           label: 'Suhu Udara (°C)',
-          data: [24.5, 24.0, 25.2, 28.5, 31.0, 30.2, 28.4, 27.5, currentSuhuUdara],
+          data: getInitialData('suhuUdara'),
           borderColor: '#F97316',
           backgroundColor: 'rgba(249, 115, 22, 0.12)',
           borderWidth: 2.5,
           fill: true,
           tension: 0.4,
+          cubicInterpolationMode: 'monotone',
           spanGaps: true,
-          pointRadius: 4,
-          pointHoverRadius: 7,
+          pointRadius: 4.5,
+          pointHoverRadius: 8.5,
           pointBackgroundColor: '#F97316',
           pointBorderColor: '#FFFFFF',
-          pointBorderWidth: 2
+          pointBorderWidth: 2,
+          pointHoverBorderWidth: 3,
+          pointHoverBackgroundColor: '#FFFFFF',
+          pointHoverBorderColor: '#F97316'
         }]
       },
       options: {
@@ -1302,7 +1440,129 @@ function initCharts() {
       updateChartsData();
     });
   });
+
+  // Initialize Chart Point Detail Modal Event Listeners
+  const pointModal = document.getElementById('modal-chart-point-detail');
+  const pointCloseBtn = document.getElementById('modal-point-close-btn');
+  const pointOkBtn = document.getElementById('modal-point-ok-btn');
+
+  if (pointModal) {
+    if (pointCloseBtn) {
+      pointCloseBtn.onclick = () => pointModal.classList.remove('active');
+    }
+    if (pointOkBtn) {
+      pointOkBtn.onclick = () => pointModal.classList.remove('active');
+    }
+    pointModal.onclick = (e) => {
+      if (e.target === pointModal) pointModal.classList.remove('active');
+    };
+  }
 }
+
+function showChartPointDetail(canvasId, labelName, timeLabel, rawVal) {
+  const modal = document.getElementById('modal-chart-point-detail');
+  if (!modal) return;
+
+  const iconEl = document.getElementById('point-detail-icon');
+  const iconBadge = document.getElementById('point-detail-icon-badge');
+  const titleEl = document.getElementById('point-detail-title');
+  const subtitleEl = document.getElementById('point-detail-subtitle');
+  const valEl = document.getElementById('point-detail-val');
+  const unitEl = document.getElementById('point-detail-unit');
+  const dotEl = document.getElementById('point-detail-dot');
+  const statusText = document.getElementById('point-detail-status-text');
+  const timeEl = document.getElementById('point-detail-time');
+  const targetEl = document.getElementById('point-detail-target');
+
+  let title = labelName || 'Detail Data Sensor';
+  let iconClass = 'fa-chart-line';
+  let unit = '';
+  let target = '-';
+  let status = 'Normal';
+  let isOptimal = true;
+  let themeColor = '#2563EB';
+
+  const numVal = parseFloat(rawVal) || 0;
+
+  if (canvasId === 'chart-suhu-air' || (labelName && labelName.toLowerCase().includes('suhu air'))) {
+    title = 'Suhu Air Kolam';
+    iconClass = 'fa-temperature-high';
+    unit = '°C';
+    target = '24.0°C - 32.0°C (Ideal Ikan)';
+    themeColor = '#2563EB';
+    if (numVal >= 24 && numVal <= 32) {
+      status = 'Kondisi Optimal (Aman)';
+      isOptimal = true;
+    } else {
+      status = 'Perlu Penyesuaian Suhu';
+      isOptimal = false;
+    }
+  } else if (canvasId === 'chart-tds' || (labelName && labelName.toLowerCase().includes('tds'))) {
+    title = 'TDS Nutrisi Air';
+    iconClass = 'fa-flask';
+    unit = 'PPM';
+    target = '400 - 900 PPM (Tanaman Sehat)';
+    themeColor = '#10B981';
+    if (numVal >= 400 && numVal <= 900) {
+      status = 'Nutrisi Optimal (Subur)';
+      isOptimal = true;
+    } else if (numVal < 400) {
+      status = 'Nutrisi Rendah (Perlu Ditambah)';
+      isOptimal = false;
+    } else {
+      status = 'Nutrisi Pekat (Tinggi)';
+      isOptimal = false;
+    }
+  } else if (canvasId === 'chart-level-air' || (labelName && labelName.toLowerCase().includes('level air'))) {
+    title = 'Level Ketinggian Air Kolam';
+    iconClass = 'fa-water';
+    unit = '%';
+    target = '60.0% - 95.0% (Ketinggian Aman)';
+    themeColor = '#06B6D4';
+    if (numVal >= 60) {
+      status = 'Level Air Aman (Pompa Normal)';
+      isOptimal = true;
+    } else {
+      status = 'Level Air Rendah (Waspada Pompa)';
+      isOptimal = false;
+    }
+  } else if (canvasId === 'chart-suhu-udara' || (labelName && labelName.toLowerCase().includes('suhu udara'))) {
+    title = 'Suhu Udara Ambient';
+    iconClass = 'fa-sun';
+    unit = '°C';
+    target = '20.0°C - 33.0°C (Lingkungan Ideal)';
+    themeColor = '#F97316';
+    if (numVal >= 20 && numVal <= 33) {
+      status = 'Suhu Lingkungan Normal';
+      isOptimal = true;
+    } else {
+      status = 'Suhu Lingkungan Ekstrem';
+      isOptimal = false;
+    }
+  }
+
+  if (iconEl) iconEl.className = `fa-solid ${iconClass}`;
+  if (iconBadge) {
+    iconBadge.style.background = `${themeColor}1A`;
+    iconBadge.style.color = themeColor;
+  }
+  if (titleEl) titleEl.innerText = title;
+  if (subtitleEl) subtitleEl.innerText = `Pencatatan pada ${timeLabel}`;
+  if (valEl) {
+    valEl.innerText = Number.isInteger(numVal) ? numVal.toLocaleString('id-ID') : numVal.toFixed(1).replace('.', ',');
+  }
+  if (unitEl) unitEl.innerText = unit;
+  if (timeEl) timeEl.innerText = timeLabel;
+  if (targetEl) targetEl.innerText = target;
+  if (statusText) statusText.innerText = `Status: ${status}`;
+
+  if (dotEl) {
+    dotEl.className = `status-dot ${isOptimal ? 'green' : 'amber'}`;
+  }
+
+  modal.classList.add('active');
+}
+window.showChartPointDetail = showChartPointDetail;
 
 function updateChartsData() {
   const period = String(state.activePeriod || 'harian').toLowerCase().trim();
@@ -1321,10 +1581,10 @@ function updateChartsData() {
     levelAirData = [72, 70, 69, 75, 74, 71, 70, 69, currentLevel];
     suhuUdaraData = [24.5, 24.0, 25.2, 28.5, 31.0, 30.2, 28.4, 27.5, currentSuhuUdara];
   } else if (period === 'mingguan' || period === 'weekly') {
-    suhuAirData = [26.0, 26.4, 26.8, currentSuhuAir];
-    tdsData = [530, 580, 620, currentTds];
-    levelAirData = [82, 80, 75, currentLevel];
-    suhuUdaraData = [26.5, 27.8, 28.9, currentSuhuUdara];
+    suhuAirData = [25.9, 26.1, 26.3, 26.0, 26.4, 26.8, currentSuhuAir];
+    tdsData = [520, 540, 560, 530, 580, 620, currentTds];
+    levelAirData = [85, 84, 83, 82, 80, 75, currentLevel];
+    suhuUdaraData = [25.5, 26.0, 26.2, 26.5, 27.8, 28.9, currentSuhuUdara];
   } else {
     // Bulanan data matching user screenshot
     suhuAirData = [30.1, 28.5, 29.2, 29.0, 28.6, 29.8, 28.0, currentSuhuAir];
