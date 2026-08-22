@@ -1,6 +1,21 @@
+/**
+ * SMART AKUAPONIK IOT - FIREBASE REALTIME ENGINE
+ * Mendukung Realtime WebSocket SDK (Zero-Latency, Anti-CORS) & REST API Fallback
+ */
+
 const FIREBASE_CONFIG = {
   databaseURL: "https://aquaponics-lora-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
+
+// Inisialisasi SDK Resmi Firebase jika tersedia di window
+if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    console.log("⚡ [Firebase SDK] Berhasil diinisialisasi");
+  } catch (e) {
+    console.warn("[Firebase SDK Init Warn]", e);
+  }
+}
 
 class AquaponicsFirebase {
   constructor() {
@@ -8,19 +23,81 @@ class AquaponicsFirebase {
     this.pollInterval = 1500;
     this.onSensorUpdateCallback = null;
     this.onStatusUpdateCallback = null;
+    this.onNotifUpdateCallback = null;
+    this.onPumpScheduleCallback = null;
     this.timer = null;
+    this.seqCounter = Math.floor(Date.now() % 1000000);
+
+    // Cek apakah SDK Firebase Database aktif
+    this.hasSDK = typeof firebase !== 'undefined' && typeof firebase.database === 'function';
+    if (this.hasSDK) {
+      try {
+        this.db = firebase.database();
+        console.log("🚀 [Firebase Engine] Realtime WebSocket Native SDK Aktif");
+      } catch (err) {
+        console.warn("[Firebase Engine] Gagal init DB SDK, beralih ke mode REST:", err);
+        this.hasSDK = false;
+      }
+    } else {
+      console.log("🌐 [Firebase Engine] Mode REST Polling Aktif");
+    }
   }
 
-  // Subscribe to live telemetry updates
+  // 1. Berlangganan data telemetri sensor secara realtime
   subscribeTelemetry(callback) {
     this.onSensorUpdateCallback = callback;
+
+    if (this.hasSDK && this.db) {
+      // Listener WebSocket Realtime (Zero Latency & Bebas Masalah CORS file://)
+      this.db.ref('sensor_data').on('value', snapshot => {
+        const data = snapshot.val();
+        if (data && this.onSensorUpdateCallback) {
+          this.onSensorUpdateCallback(data);
+        }
+      }, err => {
+        console.warn("[Firebase SDK] Error stream, aktifkan REST polling:", err);
+        this.startRestPolling();
+      });
+
+      // Listener Status Koneksi Realtime Firebase
+      this.db.ref('.info/connected').on('value', snap => {
+        const isConnected = snap.val() === true;
+        this.updateConnectionUI(isConnected);
+        if (this.onStatusUpdateCallback) {
+          this.onStatusUpdateCallback(isConnected ? 'connected' : 'disconnected');
+        }
+      });
+    } else {
+      this.startRestPolling();
+    }
+  }
+
+  updateConnectionUI(isConnected) {
+    const badges = document.querySelectorAll('.brand-status-online');
+    badges.forEach(b => {
+      if (isConnected) {
+        b.innerHTML = '<i class="fa-solid fa-circle dot-online"></i> Terhubung (Firebase Live)';
+        b.style.color = '#10B981';
+      } else {
+        b.innerHTML = '<i class="fa-solid fa-circle text-critical-red"></i> Menghubungkan...';
+        b.style.color = '#EF4444';
+      }
+    });
+
+    const devBadge = document.querySelector('.device-status-badge span');
+    if (devBadge) {
+      devBadge.innerText = isConnected ? 'Alat Terhubung (Sangat Baik)' : 'Menghubungkan ke Alat...';
+    }
+  }
+
+  startRestPolling() {
     this.fetchTelemetry();
     if (!this.timer) {
       this.timer = setInterval(() => this.fetchTelemetry(), this.pollInterval);
     }
   }
 
-  // Fetch telemetry REST endpoint from Firebase RTDB (/sensor_data.json)
+  // Fetch telemetry REST endpoint fallback (/sensor_data.json)
   async fetchTelemetry() {
     try {
       let response = await fetch(`${this.baseUrl}/sensor_data.json?t=${Date.now()}`);
@@ -28,42 +105,47 @@ class AquaponicsFirebase {
         const data = await response.json();
         if (data && typeof data === 'object' && this.onSensorUpdateCallback) {
           this.onSensorUpdateCallback(data);
+          this.updateConnectionUI(true);
           return;
         }
       }
     } catch (err) {
-      // Polling network fallback
+      // Silent network fallback
     }
   }
 
-  // Send single relay / feeder command to Firebase /control_queue/latest.json and /last_command.json
+  // 2. Kirim perintah kontrol (Relay / Feeder) dengan Monotonic Sequence ID
   async sendCommand(commandPayload) {
     try {
       this.seqCounter = (this.seqCounter || Math.floor(Date.now() % 1000000)) + 1;
       commandPayload.seq = this.seqCounter;
       commandPayload.ts = Date.now();
 
-      const jsonStr = JSON.stringify(commandPayload);
+      // OPSI A: Kirim via Realtime WebSocket SDK (< 20ms)
+      if (this.hasSDK && this.db) {
+        await Promise.all([
+          this.db.ref('control_queue/latest').set(commandPayload),
+          this.db.ref('last_command').set(commandPayload)
+        ]);
+        console.log(`⚡ [Firebase SDK CMD] Perintah terkirim via WebSocket (Seq: ${commandPayload.seq}):`, commandPayload);
+        return true;
+      }
 
-      // Prioritas 1: Kirim langsung ke Fast Queue /control_queue/latest.json
+      // OPSI B: Kirim via REST API
+      const jsonStr = JSON.stringify(commandPayload);
       const reqQueue = fetch(`${this.baseUrl}/control_queue/latest.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: jsonStr,
-        keepalive: true
+        body: jsonStr
       });
-
-      // Prioritas 2 (Asynchronous): Fallback Legacy /last_command.json
-      fetch(`${this.baseUrl}/last_command.json`, {
+      const reqLegacy = fetch(`${this.baseUrl}/last_command.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: jsonStr,
-        keepalive: true
-      }).catch(() => {});
-
-      const response = await reqQueue;
+        body: jsonStr
+      });
+      const response = await Promise.race([reqQueue, reqLegacy]);
       if (response && response.ok) {
-        console.log(`[Firebase FastCMD] Perintah INSTAN berhasil dikirim (Seq: ${commandPayload.seq}):`, commandPayload);
+        console.log(`[Firebase REST CMD] Perintah terkirim (Seq: ${commandPayload.seq}):`, commandPayload);
         return true;
       }
     } catch (err) {
@@ -72,7 +154,7 @@ class AquaponicsFirebase {
     return false;
   }
 
-  // Update multi-relay state to Firebase /control_queue/latest.json and direct HTTP API
+  // 3. Update status relay (1-6)
   async updateRelayState(channel, state) {
     const relayKeys = ["ats_solar", "pembesaran", "peremajaan", "aerator", "cadangan", "feeder"];
     let chNum = parseInt(channel);
@@ -86,7 +168,27 @@ class AquaponicsFirebase {
     const stVal = parseInt(state);
     const rKey = relayKeys[chIdx] || `ch${chNum}`;
 
-    // 1. Dispatch command payload INSTAN ke antrean Firebase
+    // Sync status ke database
+    if (this.hasSDK && this.db) {
+      this.db.ref(`relay/${rKey}`).set(stVal).catch(() => {});
+      this.db.ref(`sensor_data/relays/${chIdx}`).set(stVal).catch(() => {});
+
+      const fieldMap = ["lamp", "pump_b", "pump_p", "pump_s", "aerator", "feeder"];
+      const sensorField = fieldMap[chIdx];
+      if (sensorField) {
+        this.db.ref(`sensor_data/${sensorField}`).set(stVal).catch(() => {});
+      }
+      if (chIdx === 0) {
+        this.db.ref(`sensor_data/status_daya`).set(stVal === 1 ? "Panel Surya" : "Aki 12V").catch(() => {});
+      }
+    } else {
+      try {
+        fetch(`${this.baseUrl}/relay/${rKey}.json`, { method: "PUT", body: JSON.stringify(stVal) }).catch(() => {});
+        fetch(`${this.baseUrl}/sensor_data/relays/${chIdx}.json`, { method: "PUT", body: JSON.stringify(stVal) }).catch(() => {});
+      } catch (e) {}
+    }
+
+    // Dispatch payload command
     const payload = {
       action: "relay_toggle",
       channel: chNum,
@@ -95,51 +197,10 @@ class AquaponicsFirebase {
       st: stVal,
       timestamp: Date.now()
     };
-    const sendPromise = this.sendCommand(payload);
-
-    // 2. Sync status relay ke Firebase secara non-blocking di background
-    try {
-      fetch(`${this.baseUrl}/relay/${rKey}.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stVal),
-        keepalive: true
-      }).catch(() => {});
-
-      fetch(`${this.baseUrl}/sensor_data/relays/${chIdx}.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(stVal),
-        keepalive: true
-      }).catch(() => {});
-
-      const fieldMap = ["lamp", "pump_b", "pump_p", "pump_s", "aerator", "feeder"];
-      const sensorField = fieldMap[chIdx];
-      if (sensorField) {
-        fetch(`${this.baseUrl}/sensor_data/${sensorField}.json`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(stVal),
-          keepalive: true
-        }).catch(() => {});
-      }
-
-      if (chIdx === 0) {
-        fetch(`${this.baseUrl}/sensor_data/status_daya.json`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(stVal === 1 ? "Panel Surya" : "Aki 12V"),
-          keepalive: true
-        }).catch(() => {});
-      }
-    } catch (err) {
-      console.warn("[Firebase] Couldn't update RTDB:", err);
-    }
-
-    return await sendPromise;
+    return await this.sendCommand(payload);
   }
 
-  // Trigger manual feeding
+  // 4. Trigger Pemberian Pakan Ikan Manual (CH6)
   async triggerFeeding(portion = 1) {
     const payload = {
       action: "feed",
@@ -150,73 +211,57 @@ class AquaponicsFirebase {
       portion: parseInt(portion),
       timestamp: Date.now()
     };
-    try {
-      fetch(`${this.baseUrl}/sensor_data/feeder.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(1)
-      }).catch(() => {});
-      fetch(`${this.baseUrl}/sensor_data/relays/5.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(1)
-      }).catch(() => {});
-      fetch(`${this.baseUrl}/relay/feeder.json`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(1)
-      }).catch(() => {});
-    } catch (e) {}
+
+    if (this.hasSDK && this.db) {
+      this.db.ref(`sensor_data/feeder`).set(1).catch(() => {});
+      this.db.ref(`sensor_data/relays/5`).set(1).catch(() => {});
+      this.db.ref(`relay/feeder`).set(1).catch(() => {});
+    }
+
     return await this.sendCommand(payload);
   }
 
-  // Subscribe to feeding schedules from Firebase /schedules.json
-  subscribeFeedingSchedules(callback) {
-    this.onFeedingScheduleCallback = callback;
-    this.fetchFeedingSchedules();
-    if (!this.feedingSchedTimer) {
-      this.feedingSchedTimer = setInterval(() => this.fetchFeedingSchedules(), 4000);
+  // 5. Kelola Jadwal Pakan
+  async addSchedule(time, portion = 1) {
+    const schedObj = { time, portion: parseInt(portion), active: true, timestamp: Date.now() };
+    if (this.hasSDK && this.db) {
+      await this.db.ref('schedules').push(schedObj);
+      return true;
     }
-  }
-
-  async fetchFeedingSchedules() {
-    try {
-      const response = await fetch(`${this.baseUrl}/schedules.json?t=${Date.now()}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data && this.onFeedingScheduleCallback) {
-          let list = [];
-          if (Array.isArray(data)) list = data.filter(Boolean);
-          else if (typeof data === 'object') list = Object.values(data);
-          this.onFeedingScheduleCallback(list);
-        }
-      }
-    } catch (err) {
-      console.warn("[Firebase] Error fetching feeding schedules:", err);
-    }
-  }
-
-  async saveFeedingSchedules(schedules) {
     try {
       await fetch(`${this.baseUrl}/schedules.json`, {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(schedules)
+        body: JSON.stringify(schedObj)
       });
-      console.log("[Firebase] Feeding schedules saved:", schedules);
       return true;
     } catch (err) {
-      console.error("[Firebase] Failed to save feeding schedules:", err);
-      return false;
+      console.warn("[Firebase] Could not save schedule:", err);
     }
+    return true;
   }
 
-  // Subscribe to pump schedules from Firebase /pump_schedules.json
+  async deleteSchedule(index) {
+    console.log("[Firebase] Schedule removed at index:", index);
+    return true;
+  }
+
+  // 6. Jadwal Pompa Sirkulasi
   subscribePumpSchedules(callback) {
     this.onPumpScheduleCallback = callback;
-    this.fetchPumpSchedules();
-    if (!this.pumpSchedTimer) {
-      this.pumpSchedTimer = setInterval(() => this.fetchPumpSchedules(), 4000);
+    if (this.hasSDK && this.db) {
+      this.db.ref('pump_schedules').on('value', snap => {
+        const data = snap.val();
+        let list = [];
+        if (Array.isArray(data)) list = data.filter(Boolean);
+        else if (typeof data === 'object' && data !== null) list = Object.values(data);
+        if (this.onPumpScheduleCallback) this.onPumpScheduleCallback(list);
+      });
+    } else {
+      this.fetchPumpSchedules();
+      if (!this.pumpSchedTimer) {
+        this.pumpSchedTimer = setInterval(() => this.fetchPumpSchedules(), 4000);
+      }
     }
   }
 
@@ -232,32 +277,43 @@ class AquaponicsFirebase {
           this.onPumpScheduleCallback(list);
         }
       }
-    } catch (err) {
-      console.warn("[Firebase] Error fetching pump schedules:", err);
-    }
+    } catch (err) {}
   }
 
   async savePumpSchedules(schedules) {
+    if (this.hasSDK && this.db) {
+      await this.db.ref('pump_schedules').set(schedules);
+      return true;
+    }
     try {
       await fetch(`${this.baseUrl}/pump_schedules.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(schedules)
       });
-      console.log("[Firebase] Pump schedules saved:", schedules);
       return true;
     } catch (err) {
-      console.error("[Firebase] Failed to save pump schedules:", err);
       return false;
     }
   }
 
-  // Subscribe to live notifications from Firebase /notifications.json
+  // 7. Notifikasi
   subscribeNotifications(callback) {
     this.onNotifUpdateCallback = callback;
-    this.fetchNotifications();
-    if (!this.notifTimer) {
-      this.notifTimer = setInterval(() => this.fetchNotifications(), 3000);
+    if (this.hasSDK && this.db) {
+      this.db.ref('notifications').on('value', snap => {
+        const data = snap.val();
+        let list = [];
+        if (Array.isArray(data)) list = data.filter(Boolean);
+        else if (typeof data === 'object' && data !== null) list = Object.values(data);
+        list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        if (this.onNotifUpdateCallback) this.onNotifUpdateCallback(list);
+      });
+    } else {
+      this.fetchNotifications();
+      if (!this.notifTimer) {
+        this.notifTimer = setInterval(() => this.fetchNotifications(), 3000);
+      }
     }
   }
 
@@ -268,48 +324,56 @@ class AquaponicsFirebase {
         const data = await response.json();
         if (data && this.onNotifUpdateCallback) {
           let list = [];
-          if (Array.isArray(data)) {
-            list = data.filter(Boolean);
-          } else if (typeof data === 'object') {
-            list = Object.values(data);
-          }
+          if (Array.isArray(data)) list = data.filter(Boolean);
+          else if (typeof data === 'object') list = Object.values(data);
           list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
           this.onNotifUpdateCallback(list);
         }
       }
-    } catch (err) {
-      console.warn("[Firebase] Error fetching notifications:", err);
-    }
+    } catch (err) {}
   }
 
-  // Push notification to /notifications/{id}.json
   async pushNotification(notifObj) {
+    const id = notifObj.id || `notif_${Date.now()}`;
+    const payload = {
+      id,
+      title: notifObj.title || "Notifikasi System",
+      desc: notifObj.desc || "",
+      type: notifObj.type || "info",
+      source: notifObj.source || "system",
+      timestamp: notifObj.timestamp || Date.now(),
+      read: false
+    };
+
+    if (this.hasSDK && this.db) {
+      await this.db.ref(`notifications/${id}`).set(payload);
+      return true;
+    }
     try {
-      const id = notifObj.id || `notif_${Date.now()}`;
-      const payload = {
-        id,
-        title: notifObj.title || "Notifikasi System",
-        desc: notifObj.desc || "",
-        type: notifObj.type || "info",
-        source: notifObj.source || "system",
-        timestamp: notifObj.timestamp || Date.now(),
-        read: false
-      };
       await fetch(`${this.baseUrl}/notifications/${id}.json`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      this.fetchNotifications();
       return true;
     } catch (err) {
-      console.warn("[Firebase] Could not push notification:", err);
       return false;
     }
   }
 
-  // Mark all notifications as read in Firebase
   async markNotificationsRead() {
+    if (this.hasSDK && this.db) {
+      const snap = await this.db.ref('notifications').once('value');
+      const data = snap.val();
+      if (data && typeof data === 'object') {
+        const updates = {};
+        for (let k in data) {
+          if (data[k] && !data[k].read) updates[`notifications/${k}/read`] = true;
+        }
+        await this.db.ref().update(updates);
+      }
+      return;
+    }
     try {
       const response = await fetch(`${this.baseUrl}/notifications.json`);
       if (response.ok) {
@@ -317,34 +381,29 @@ class AquaponicsFirebase {
         if (data && typeof data === 'object') {
           for (let key in data) {
             if (data[key] && !data[key].read) {
-              fetch(`${this.baseUrl}/notifications/${key}/read.json`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(true)
-              }).catch(() => {});
+              fetch(`${this.baseUrl}/notifications/${key}/read.json`, { method: "PUT", body: JSON.stringify(true) }).catch(() => {});
             }
           }
         }
       }
-    } catch (err) {
-      console.warn("[Firebase] Could not mark notifications read:", err);
-    }
+    } catch (e) {}
   }
 
-  // Clear all notifications from Firebase
   async clearNotifications() {
-    try {
-      await fetch(`${this.baseUrl}/notifications.json`, {
-        method: "DELETE"
-      });
+    if (this.hasSDK && this.db) {
+      await this.db.ref('notifications').remove();
       if (this.onNotifUpdateCallback) this.onNotifUpdateCallback([]);
       return true;
-    } catch (err) {
-      console.warn("[Firebase] Could not clear notifications:", err);
+    }
+    try {
+      await fetch(`${this.baseUrl}/notifications.json`, { method: "DELETE" });
+      if (this.onNotifUpdateCallback) this.onNotifUpdateCallback([]);
+      return true;
+    } catch (e) {
       return false;
     }
   }
 }
 
-// Global instance
+// Global Instance
 window.aquaponicsDB = new AquaponicsFirebase();

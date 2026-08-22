@@ -19,18 +19,6 @@ window.showFeedModal = function (portion = 1) {
 };
 window.triggerShowFeedModal = window.showFeedModal;
 
-currentPortionToFeed = 1;
-
-function updateConfirmPortionUI() {
-  const valEl = document.getElementById('modal-confirm-portion-val');
-  if (valEl) valEl.innerText = `${currentPortionToFeed} Porsi`;
-}
-
-window.changeConfirmPortion = function (delta) {
-  currentPortionToFeed = Math.max(1, Math.min(5, currentPortionToFeed + delta));
-  updateConfirmPortionUI();
-};
-
 // Ensure AquaponicsFirebase prototype safety
 if (typeof window !== 'undefined') {
   window.addEventListener('DOMContentLoaded', () => {
@@ -420,13 +408,8 @@ function initRealtimeDataBinding() {
     window.aquaponicsDB.subscribeTelemetry(data => {
       if (data) {
         let updated = false;
-        const incomingSuhuAir = data.suhu_air !== undefined ? parseFloat(data.suhu_air) : (data.temp_w !== undefined ? parseFloat(data.temp_w) : undefined);
-        if (incomingSuhuAir !== undefined) {
-          if (incomingSuhuAir > 0.0 || !state.telemetry.suhu_air) {
-            state.telemetry.suhu_air = incomingSuhuAir;
-            updated = true;
-          }
-        }
+        if (data.suhu_air !== undefined) { state.telemetry.suhu_air = parseFloat(data.suhu_air); updated = true; }
+        else if (data.temp_w !== undefined) { state.telemetry.suhu_air = parseFloat(data.temp_w); updated = true; }
 
         if (data.tds !== undefined) { state.telemetry.tds = parseFloat(data.tds); updated = true; }
 
@@ -445,9 +428,40 @@ function initRealtimeDataBinding() {
         if (data.status_daya !== undefined) { state.telemetry.status_daya = data.status_daya; updated = true; }
         else if (data.lamp !== undefined) { state.telemetry.status_daya = (data.lamp == 1 ? "Panel Surya" : "Aki 12V"); updated = true; }
 
-        // Keep relay state strictly controlled by user manual switches & scheduler
-        if (typeof syncRelayUI === 'function') {
-          syncRelayUI();
+        if (data.relays && Array.isArray(data.relays)) {
+          state.userControlledRelays = state.userControlledRelays || {};
+          let changed = false;
+
+          data.relays.forEach((val, idx) => {
+            // Khusus Feeder CH6: Otomatis mati setelah durasi pakan selesai
+            if (idx === 5) {
+              const targetVal = (!window.feedCountdownInterval) ? 0 : val;
+              if (state.relays[idx] !== targetVal) {
+                state.relays[idx] = targetVal;
+                changed = true;
+              }
+            } else {
+              // Untuk CH1-CH5 (ATS, Pembesaran, Peremajaan, Aerator, Cadangan):
+              // Jika user belum pernah klik tombol, gunakan status dari Firebase.
+              // Jika user sudah klik tombol, kunci status sesuai perintah user.
+              if (state.userControlledRelays[idx] === undefined) {
+                if (state.relays[idx] !== val) {
+                  state.relays[idx] = val;
+                  changed = true;
+                }
+              } else {
+                // Pertahankan status pilihan user
+                if (state.relays[idx] !== state.userControlledRelays[idx]) {
+                  state.relays[idx] = state.userControlledRelays[idx];
+                  changed = true;
+                }
+              }
+            }
+          });
+
+          if (changed && typeof syncRelayUI === 'function') {
+            syncRelayUI();
+          }
         }
 
         if (updated) {
@@ -474,35 +488,9 @@ function initRealtimeDataBinding() {
         }
       });
     }
-
-    // Load cached feeding schedules from localStorage if available
-    try {
-      const cachedFeedScheds = localStorage.getItem('aquaponics_feeding_schedules');
-      if (cachedFeedScheds) {
-        const parsed = JSON.parse(cachedFeedScheds);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          state.schedules = parsed;
-          if (typeof renderSchedules === 'function') renderSchedules();
-          if (typeof evaluateFeedingSchedules === 'function') evaluateFeedingSchedules();
-        }
-      }
-    } catch (e) {}
-
-    // Subscribe to feeding schedules from Firebase
-    if (window.aquaponicsDB.subscribeFeedingSchedules) {
-      window.aquaponicsDB.subscribeFeedingSchedules(list => {
-        if (Array.isArray(list) && list.length > 0) {
-          state.schedules = list;
-          try { localStorage.setItem('aquaponics_feeding_schedules', JSON.stringify(list)); } catch (e) {}
-          if (typeof renderSchedules === 'function') renderSchedules();
-          if (typeof evaluateFeedingSchedules === 'function') evaluateFeedingSchedules();
-        }
-      });
-    }
   }
 
   setInterval(updateUI, 2000);
-  setInterval(evaluateFeedingSchedules, 1000);
 }
 
 function pushRealtimeChartData(data) {
@@ -641,9 +629,9 @@ function updateUI() {
       elTds.classList.remove('text-sky');
     }
     if (tdsStatusEl) {
-      tdsStatusEl.className = 'air-temp-status-pill status-amber-pill';
-      tdsStatusEl.style.color = '';
-      tdsStatusEl.innerHTML = `${tdsVal < 400 ? 'Rendah' : 'Pekat'}`;
+      tdsStatusEl.className = 'status-warning-amber';
+      tdsStatusEl.style.color = '#D97706';
+      tdsStatusEl.innerHTML = `⚠️ ${tdsVal < 400 ? 'Nutrisi Rendah (Air Bersih)' : 'Nutrisi Pekat'}`;
     }
   } else {
     if (elTds) {
@@ -651,12 +639,11 @@ function updateUI() {
       elTds.classList.add('text-sky');
     }
     if (tdsStatusEl) {
-      tdsStatusEl.className = 'air-temp-status-pill status-green-pill';
-      tdsStatusEl.style.color = '';
-      tdsStatusEl.innerHTML = '<span class="air-status-dot"></span> Optimal';
+      tdsStatusEl.className = 'success-text-normal';
+      tdsStatusEl.innerHTML = '<span class="status-dot green"></span> Nutrisi Optimal';
     }
   }
-  if (elTds) elTds.innerHTML = `${tdsVal} <span style="font-size: 13px; font-weight: 600; color: var(--text-muted, #64748B);">PPM</span>`;
+  if (elTds) elTds.innerHTML = `${tdsVal}`;
 
   // SVG TDS Ring: Circumference = 150.8
   // Nilai 0 PPM = Offset 150.8 (Lingkaran Biru 0 / Kosong Total)
@@ -928,26 +915,24 @@ function updateEcosystemStatus() {
   }
 }
 
-function evaluateFeedingSchedules() {
-  if (!state.schedules || !Array.isArray(state.schedules) || state.schedules.length === 0) {
-    updateFeedingCountdown();
-    return;
-  }
-
+function updateFeedingCountdown() {
   const now = new Date();
   const hoursStr = String(now.getHours()).padStart(2, '0');
   const minsStr = String(now.getMinutes()).padStart(2, '0');
   const timeNowStr = `${hoursStr}:${minsStr}`;
   const dateTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   if (!state.lastTriggeredSchedules) {
     state.lastTriggeredSchedules = {};
   }
 
-  state.schedules.forEach(sched => {
-    if (sched.active === false) return;
+  let nextSchedule = null;
+  let minDiff = Infinity;
 
-    const [h, m] = String(sched.time || "00:00").split(':').map(Number);
+  state.schedules.forEach(sched => {
+    const [h, m] = sched.time.split(':').map(Number);
+    const schedMinutes = h * 60 + m;
     const timeSchedStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 
     // AUTOMATIC FEEDING EXECUTION ENGINE
@@ -955,48 +940,29 @@ function evaluateFeedingSchedules() {
       const triggerKey = `${dateTodayStr}_${timeSchedStr}`;
       if (!state.lastTriggeredSchedules[triggerKey]) {
         state.lastTriggeredSchedules[triggerKey] = true;
-        console.log(`[Auto Feeder Triggered] Scheduled time hit: ${timeSchedStr} (${sched.portion || 1} Porsi)`);
+        console.log(`[Auto Feeder Triggered] Scheduled time hit: ${timeSchedStr} (${sched.portion} Portion)`);
 
-        state.activeScheduleTime = timeSchedStr;
         // Trigger Feeding Action (Relay 6, Firebase & Telegram Alert)
         if (typeof triggerDirectFeeding === 'function') {
-          triggerDirectFeeding(sched.portion || 1);
+          triggerDirectFeeding(sched.portion);
         }
 
         // Display Success Toast Notification
         if (typeof addNotification === 'function') {
-          addNotification('success', 'Pakan Otomatis Berhasil', `Feeder Pakan otomatis aktif sesuai jadwal ${timeSchedStr} (${sched.portion || 1} Porsi)`);
+          addNotification('success', 'Pakan Otomatis Berhasil', `Feeder Pakan otomatis aktif sesuai jadwal ${timeSchedStr} (${sched.portion} Porsi)`);
         }
       }
     }
+
+    let diff = schedMinutes - currentMinutes;
+    if (diff <= 0) {
+      diff += 24 * 60; // Next day
+    }
+    if (diff < minDiff) {
+      minDiff = diff;
+      nextSchedule = sched;
+    }
   });
-
-  updateFeedingCountdown();
-}
-
-function updateFeedingCountdown() {
-  const now = new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-  let nextSchedule = null;
-  let minDiff = Infinity;
-
-  if (state.schedules && Array.isArray(state.schedules)) {
-    state.schedules.forEach(sched => {
-      if (sched.active === false) return;
-      const [h, m] = String(sched.time || "00:00").split(':').map(Number);
-      const schedMinutes = h * 60 + m;
-
-      let diff = schedMinutes - currentMinutes;
-      if (diff <= 0) {
-        diff += 24 * 60; // Next day
-      }
-      if (diff < minDiff) {
-        minDiff = diff;
-        nextSchedule = sched;
-      }
-    });
-  }
 
   const countdownEl = document.getElementById('feed-countdown');
   const nextTimeEl = document.getElementById('feed-next-time');
@@ -1417,16 +1383,15 @@ function updateChartTheme(isDark) {
 
 /* ================= 6. CONTROL RELAYS SWITCHES ================= */
 function initControlRelays() {
-  try {
-    const cachedRelays = localStorage.getItem('aquaponics_relays');
-    if (cachedRelays) {
-      const parsed = JSON.parse(cachedRelays);
-      if (Array.isArray(parsed) && parsed.length === 6) {
-        state.relays = parsed;
-        state.relays[5] = 0; // Feeder is momentary, starts idle
-      }
+  state.userControlledRelays = state.userControlledRelays || {};
+  for (let i = 0; i < 5; i++) {
+    const saved = localStorage.getItem('aquaponics_relay_' + i);
+    if (saved !== null) {
+      const v = parseInt(saved) || 0;
+      state.relays[i] = v;
+      state.userControlledRelays[i] = v;
     }
-  } catch (e) {}
+  }
   syncRelayUI();
 }
 
@@ -1454,8 +1419,6 @@ function triggerDirectFeeding(portion = 1) {
   let remainingSec = Math.round(feedDuration / 1000);
 
   state.relays[5] = 1;
-  state.userRelayLocks = state.userRelayLocks || {};
-  state.userRelayLocks[5] = Date.now() + feedDuration + 1500; // Lock feeder during active countdown
 
   syncRelayUI();
 
@@ -1482,8 +1445,6 @@ function triggerDirectFeeding(portion = 1) {
         window.feederTimerRef = null;
       }
       state.relays[5] = 0;
-      state.activeScheduleTime = null;
-      if (state.userRelayLocks) state.userRelayLocks[5] = 0;
       syncRelayUI();
 
       if (window.aquaponicsDB) {
@@ -1517,8 +1478,6 @@ function toggleRelayChannel(channel) {
         window.feedCountdownInterval = null;
       }
       state.relays[5] = 0;
-      state.userRelayLocks = state.userRelayLocks || {};
-      state.userRelayLocks[5] = 0;
       syncRelayUI();
       if (window.aquaponicsDB) window.aquaponicsDB.updateRelayState(6, 0);
       return;
@@ -1539,9 +1498,12 @@ function toggleRelayChannel(channel) {
   const currentVal = (state.relays[chIdx] === 1) ? 1 : 0;
   const newVal = currentVal === 1 ? 0 : 1;
 
+  // Kunci status murni ke pilihan pengguna
+  state.userControlledRelays = state.userControlledRelays || {};
+  state.userControlledRelays[chIdx] = newVal;
   state.relays[chIdx] = newVal;
   try {
-    localStorage.setItem('aquaponics_relays', JSON.stringify(state.relays));
+    localStorage.setItem('aquaponics_relay_' + chIdx, newVal);
   } catch (e) {}
 
   syncRelayUI();
@@ -1630,14 +1592,6 @@ function syncRelayUI() {
   }
   if (portionSelect) {
     portionSelect.disabled = isFeeding;
-  }
-
-  // Update real-time "Sedang Menyala" indicators in pump and feed schedules
-  if (typeof renderPumpSchedules === 'function') {
-    renderPumpSchedules();
-  }
-  if (typeof renderSchedules === 'function') {
-    renderSchedules();
   }
 }
 
@@ -1752,23 +1706,18 @@ function initFeedingScheduler() {
         if (editingFeedScheduleIndex >= 0 && state.schedules[editingFeedScheduleIndex]) {
           state.schedules[editingFeedScheduleIndex].time = timeVal;
           state.schedules[editingFeedScheduleIndex].portion = portionVal;
-          state.schedules[editingFeedScheduleIndex].active = true;
           addNotification('success', 'Jadwal Diperbarui', `Jadwal pakan diubah ke pukul ${timeVal} (${portionVal} Porsi)`);
         } else {
           state.schedules.push({ time: timeVal, portion: portionVal, active: true });
           addNotification('success', 'Jadwal Ditambahkan', `Pemberian pakan dijadwalkan pukul ${timeVal} (${portionVal} Porsi)`);
         }
 
-        // Reset trigger key so that newly set schedule can trigger today
-        const now = new Date();
-        const dateTodayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        if (state.lastTriggeredSchedules) {
-          delete state.lastTriggeredSchedules[`${dateTodayStr}_${timeVal}`];
-        }
-
         renderSchedules();
-        saveFeedingSchedulesToDB();
-        if (typeof evaluateFeedingSchedules === 'function') evaluateFeedingSchedules();
+        updateFeedingCountdown();
+
+        if (window.aquaponicsDB && typeof window.aquaponicsDB.addSchedule === 'function') {
+          try { window.aquaponicsDB.addSchedule(timeVal, portionVal); } catch (e) { }
+        }
       } catch (err) {
         console.warn("Error saving schedule:", err);
       } finally {
@@ -1810,15 +1759,6 @@ function initFeedingScheduler() {
   renderSchedules();
 }
 
-function saveFeedingSchedulesToDB() {
-  try {
-    localStorage.setItem('aquaponics_feeding_schedules', JSON.stringify(state.schedules));
-  } catch (e) {}
-  if (window.aquaponicsDB && typeof window.aquaponicsDB.saveFeedingSchedules === 'function') {
-    window.aquaponicsDB.saveFeedingSchedules(state.schedules);
-  }
-}
-
 function renderSchedules() {
   const listContainer = document.getElementById('schedule-items-list');
   if (!listContainer) return;
@@ -1833,27 +1773,14 @@ function renderSchedules() {
     return;
   }
 
-  const now = new Date();
-  const timeNowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-  listContainer.innerHTML = state.schedules.map((s, idx) => {
-    const isFeedingNow = Boolean(state.relays && state.relays[5] === 1);
-    const isThisSchedActive = isFeedingNow && (timeNowStr === s.time || state.activeScheduleTime === s.time);
-
-    return `
-    <div class="schedule-item ${isThisSchedActive ? 'sched-item-running' : ''}">
+  listContainer.innerHTML = state.schedules.map((s, idx) => `
+    <div class="schedule-item">
       <div class="sched-left">
-        <i class="fa-regular fa-clock" style="color: ${isThisSchedActive ? '#2563EB' : 'var(--primary)'};"></i>
+        <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
         <span class="sched-time">${s.time}</span>
-        ${isThisSchedActive ? `
-          <span class="pump-live-tag">
-            <span class="pump-live-pulse"></span>
-            Sedang Menyala
-          </span>
-        ` : ''}
       </div>
       <div class="sched-right">
-        <span class="sched-portion ${isThisSchedActive ? 'sched-portion-active' : ''}">${s.portion} Porsi</span>
+        <span class="sched-portion">${s.portion} Porsi</span>
         <button class="sched-edit-btn" onclick="editSchedule(${idx})" title="Edit Jadwal">
           <i class="fa-solid fa-pen-to-square"></i>
         </button>
@@ -1862,18 +1789,13 @@ function renderSchedules() {
         </button>
       </div>
     </div>
-    `;
-  }).join('');
+  `).join('');
 }
 
 window.deleteSchedule = function (index) {
-  if (state.schedules && state.schedules[index]) {
-    const deleted = state.schedules.splice(index, 1)[0];
-    renderSchedules();
-    saveFeedingSchedulesToDB();
-    if (typeof evaluateFeedingSchedules === 'function') evaluateFeedingSchedules();
-    addNotification('info', 'Jadwal Dihapus', `Jadwal pakan ${deleted.time} telah dihapus.`);
-  }
+  state.schedules.splice(index, 1);
+  renderSchedules();
+  updateFeedingCountdown();
 };
 
 /* ================= 7B. DAILY PUMP SCHEDULER ENGINE (CH 2 & CH 3) ================= */
@@ -2046,24 +1968,14 @@ function renderPumpSchedules() {
     return;
   }
 
-  container.innerHTML = state.pumpSchedules.map((s, idx) => {
-    const chIdx = s.channel ? (s.channel - 1) : 1;
-    const isPumpOn = Boolean(state.relays && state.relays[chIdx] === 1);
-
-    return `
-    <div class="schedule-item ${isPumpOn ? 'sched-item-running' : ''}">
+  container.innerHTML = state.pumpSchedules.map((s, idx) => `
+    <div class="schedule-item">
       <div class="sched-left">
-        <i class="fa-regular fa-clock" style="color: ${isPumpOn ? '#2563EB' : 'var(--primary)'};"></i>
+        <i class="fa-regular fa-clock" style="color: var(--primary);"></i>
         <span class="sched-time">${s.start} - ${s.end}</span>
-        ${isPumpOn ? `
-          <span class="pump-live-tag">
-            <span class="pump-live-pulse"></span>
-            Sedang Menyala
-          </span>
-        ` : ''}
       </div>
       <div class="sched-right">
-        <span class="sched-portion ${isPumpOn ? 'sched-portion-active' : ''}">${s.name}</span>
+        <span class="sched-portion">${s.name}</span>
         <button class="sched-edit-btn" onclick="editPumpSchedule(${idx})" title="Edit Jadwal">
           <i class="fa-solid fa-pen-to-square"></i>
         </button>
@@ -2072,8 +1984,7 @@ function renderPumpSchedules() {
         </button>
       </div>
     </div>
-    `;
-  }).join('');
+  `).join('');
 }
 
 window.deletePumpSchedule = function (index) {

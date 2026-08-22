@@ -310,7 +310,7 @@
                 </div>
               </div>
 
-              <!-- Card 2: TDS Nutrisi Air (BALANCED SYMMETRIC DESIGN) -->
+              <!-- Card 2: TDS Nutrisi Air (EXACT MATCH REFERENCE SCREENSHOT) -->
               <div class="card metric-card tds-card-custom" id="card-tds">
                 <div class="card-header-flex-top">
                   <div class="card-title-with-outline-icon">
@@ -321,31 +321,28 @@
                   </div>
                 </div>
 
-                <!-- Center Ring Gauge Visual (Padat di Tengah) -->
-                <div class="humidity-center-visual-box">
-                  <div class="ring-gauge-wrapper-box humidity-ring-large-box">
+                <div class="gauge-metric-center-row">
+                  <div class="ring-gauge-wrapper-box">
                     <svg viewBox="0 0 64 64" class="ring-gauge-svg">
                       <!-- Soft background track ring -->
-                      <circle cx="32" cy="32" r="25" fill="none" stroke="#E0F2FE" stroke-width="7" />
+                      <circle cx="32" cy="32" r="24" fill="none" stroke="#E0F2FE" stroke-width="7" />
                       <!-- Dynamic progress fill ring -->
-                      <circle id="tds-ring-fill" cx="32" cy="32" r="25" fill="none" stroke="#0284C7" stroke-width="7"
-                        stroke-linecap="round" stroke-dasharray="157.1" stroke-dashoffset="157.1"
+                      <circle id="tds-ring-fill" cx="32" cy="32" r="24" fill="none" stroke="#2563EB" stroke-width="7"
+                        stroke-linecap="round" stroke-dasharray="150.8" stroke-dashoffset="150.8"
                         transform="rotate(-90 32 32)"
                         style="transition: stroke-dashoffset 0.6s ease, stroke 0.4s ease;" />
                     </svg>
-                    <div class="ring-center-white-circle humidity-inner-large-circle">
+                    <div class="ring-center-white-circle">
                       <span class="gauge-unit-bold text-slate">PPM</span>
                     </div>
                   </div>
-                </div>
-
-                <!-- Bottom Metric Body -->
-                <div class="air-temp-body">
-                  <div class="val-status-inline-row">
-                    <span class="metric-number-dark text-sky" id="val-tds">0</span>
-                    <span class="air-temp-status-pill status-amber-pill" id="status-tds">Rendah</span>
+                  <div class="gauge-info-text-side">
+                    <div class="metric-number-dark" id="val-tds">0</div>
+                    <div class="sub-text-gray">Target: 400-900</div>
+                    <div class="status-warning-amber" id="status-tds">
+                      ⚠️ Nutrisi Rendah (Air Bersih)
+                    </div>
                   </div>
-                  <div class="sub-text-gray">Target: 400-900 PPM</div>
                 </div>
               </div>
 
@@ -628,7 +625,7 @@
             <div class="card feed-control-card">
               <div class="schedule-header-flex" style="margin-bottom: 14px;">
                 <div class="card-title flex-align-center gap-8">
-                  <span>Jadwal &amp; Kontrol Pakan</span>
+                  <span>Kontrol &amp; Jadwal Pakan</span>
                 </div>
               </div>
 
